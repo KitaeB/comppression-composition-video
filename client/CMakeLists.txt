@@ -5,43 +5,48 @@ project(client-ccv)
 # Устанавливаем стандарт C++
 set(CMAKE_CXX_STANDARD 17)
 
-# Условие для Windows и Linux
+# Условие для Windows
 if(WIN32)
-    # Для Windows используем vcpkg
-    set(VCPKG_ROOT "E:/Program/vcpkg")
-    set(VCPKG_TRIPLET "x64-windows")
-
-    # Подключаем заголовочные файлы и библиотеки из vcpkg
-    include_directories("${VCPKG_ROOT}/installed/${VCPKG_TRIPLET}/include")
-    link_directories("${VCPKG_ROOT}/installed/${VCPKG_TRIPLET}/lib")
-
-    # Линковка необходимых библиотек
-    target_link_libraries(client-ccv PRIVATE opencv boost_system ws2_32 lz4 zlib aom)
-else()
-    # Если Linux, используем find_package
-    find_package(OpenCV REQUIRED)
-    find_package(Boost REQUIRED COMPONENTS system)
-    find_package(lz4 REQUIRED)
-    find_package(zlib REQUIRED)
-    find_package(aom REQUIRED)
-
-    # Линковка библиотек для Linux
-    target_link_libraries(client-ccv PRIVATE
-        opencv_core
-        opencv_imgcodecs
-        Boost::Boost
-        Boost::system
-        lz4
-        zlib
-        aom
-    )
+    # Устанавливаем путь к vcpkg toolchain, если не задан явно
+    if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+        set(CMAKE_TOOLCHAIN_FILE "E:/Program/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+    endif()
 endif()
 
 # Указываем все исходные файлы
 file(GLOB SOURCES "src/*.cpp")
 
-# Создаем исполняемый файл
+# Создаём исполняемый файл
 add_executable(client-ccv ${SOURCES})
 
-# Указываем директорию для заголовочных файлов
-target_include_directories(client-ccv PRIVATE ${CMAKE_SOURCE_DIR}/include)
+# Установка версии Windows API для Boost.Asio (например, Windows 10 — 0x0A00)
+if(WIN32)
+    target_compile_definitions(client-ccv PRIVATE _WIN32_WINNT=0x0A00)
+endif()
+
+# Поиск библиотек через vcpkg
+find_package(OpenCV REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
+find_package(lz4 REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(aom REQUIRED)
+
+# Подключение зависимостей
+target_link_libraries(client-ccv PRIVATE
+    ${OpenCV_LIBS}
+    Boost::system
+    lz4::lz4
+    ZLIB::ZLIB
+    unofficial::aom
+)
+
+# Только для Windows — линковка с winsock
+if(WIN32)
+    target_link_libraries(client-ccv PRIVATE ws2_32)
+endif()
+
+# Подключаем директории с заголовочными файлами
+target_include_directories(client-ccv PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    ${OpenCV_INCLUDE_DIRS}
+)

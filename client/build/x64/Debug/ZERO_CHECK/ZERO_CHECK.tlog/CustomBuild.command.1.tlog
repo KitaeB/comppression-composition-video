@@ -1,0 +1,10 @@
+^C:\USERS\KITAE\SOURCE\REPOS\KITAEB\COMPPRESSION-COMPOSITION-VIDEO\CLIENT\BUILD\CMAKEFILES\DA2BFE942FCB5A1CAFBB3904B12D298E\GENERATE.STAMP.RULE
+setlocal
+E:\Program\CMake\bin\cmake.exe -SC:/Users/Kitae/source/repos/KitaeB/comppression-composition-video/client -BC:/Users/Kitae/source/repos/KitaeB/comppression-composition-video/client/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/Kitae/source/repos/KitaeB/comppression-composition-video/client/build/client-ccv.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

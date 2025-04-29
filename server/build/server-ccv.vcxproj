@@ -385,6 +385,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\server\src\Main.cpp" />
+    <ClCompile Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\server\src\compression.cpp" />
     <ClCompile Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\server\src\server.cpp" />
   </ItemGroup>
   <ItemGroup />

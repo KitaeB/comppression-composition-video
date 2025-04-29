@@ -5,70 +5,55 @@
 
 using boost::asio::ip::tcp;
 
-const int PORT = 12345;
+const int PORT = 9090;
+const char *HOST = "127.0.0.1";
+int main()
+{
 
-void send_image(tcp::socket& socket, const cv::Mat& image) {
-    std::vector<uchar> buf;
-    cv::imencode(".png", image, buf);  // Сжимаем изображение в формат JPG
-
-    // Отправляем размер изображения
-    std::string image_size = std::to_string(buf.size()) + "\n";
-    boost::asio::write(socket, boost::asio::buffer(image_size));
-    // Отправляем само изображение
-    boost::asio::write(socket, boost::asio::buffer(buf));
-}
-
-int main() {
-    try {
-        boost::asio::io_context io_context;
-        tcp::resolver resolver(io_context);
-        tcp::socket socket(io_context);
-
-        // Разрешаем хост и порт
-        auto endpoints = resolver.resolve("127.0.0.1", std::to_string(PORT));
-        boost::asio::connect(socket, endpoints);
-
-        std::cout << "Connected to server.\n";
-
-        // Загружаем изображение для отправки
-        cv::Mat image = cv::imread("image.png");
-        if (image.empty()) {
-            std::cerr << "Failed to read image!" << std::endl;
-        }
-
-        // Отправляем изображение на сервер
-        send_image(socket, image);
-        std::cout << "Image sent to server.\n";
-
-        // Получаем обработанное изображение
-        std::vector<char> buffer;
-        boost::asio::streambuf streambuf;
-        boost::asio::read_until(socket, streambuf, "\n");
-        std::istream is(&streambuf);
-        std::string image_size_str;
-        std::getline(is, image_size_str);
-        int image_size = std::stoi(image_size_str);
-
-        buffer.resize(image_size);
-        boost::asio::read(socket, boost::asio::buffer(buffer), boost::asio::transfer_exactly(image_size));
-
-        // Декодируем полученное изображение
-        cv::Mat received_image = cv::imdecode(buffer, cv::IMREAD_COLOR);
-        if (received_image.empty()) {
-            std::cerr << "Failed to decode received image!" << std::endl;
-        }
-
-        // Показываем полученное обработанное изображение
-        cv::imshow("Received Processed Image", received_image);
-        cv::waitKey(0);
-
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-    }
-
+    int rows, cols, type;
+    cv::Mat frame;
     while (true)
     {
+        try
+        {
+            boost::asio::io_context io_context;
+            tcp::resolver resolver(io_context);
+            tcp::socket socket(io_context);
 
+            socket.connect(tcp::endpoint(boost::asio::ip::make_address(HOST), PORT));
+
+            while (true)
+            {
+                // Читаем метаданные
+                boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
+                boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
+                boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
+
+                if (rows <= 0 || cols <= 0)
+                {
+                    std::cerr << "Ошибка получения размера кадра!" << std::endl;
+                    break;
+                }
+
+                frame = cv::Mat(rows, cols, type);
+
+                // Читаем данные кадра
+                boost::asio::read(socket, boost::asio::buffer(frame.data, frame.total() * frame.elemSize()));
+
+                cv::imshow("webcam", frame);
+
+                // Обязательно waitKey
+                if (cv::waitKey(1) == 27)
+                { // Нажал ESC
+                    break;
+                }
+            }
+        }
+        catch (const std::exception &ex)
+        {
+            std::cerr << "Ошибка: " << ex.what() << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+        return 0;
     }
-    return 0;
 }

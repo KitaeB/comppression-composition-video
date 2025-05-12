@@ -386,6 +386,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\client\src\client.cpp" />
+    <ClCompile Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\client\src\decomression.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

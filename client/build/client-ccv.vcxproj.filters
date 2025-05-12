@@ -4,6 +4,9 @@
     <ClCompile Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\client\src\client.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\client\src\decomression.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\Kitae\source\repos\KitaeB\comppression-composition-video\client\CMakeLists.txt" />

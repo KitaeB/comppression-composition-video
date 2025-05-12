@@ -1,4 +1,16 @@
+#pragma once
+
 #include <lz4.h>
 #include <zlib.h>
-#include <aom.h>
+//#include <aom.h>
+#include <vector>
+#include <opencv2/opencv.hpp>
 
+//
+cv::Mat convertFromCleanData(const std::vector<char>& data, int rows, int cols, int type);
+
+// Распаковка lz4
+bool lz4_decompress(const std::vector<char>& compressed, std::vector<char>& output, int originalSize);
+
+// Распаковка zlib
+int zlib_decompress(const std::vector<Bytef>& compressed, std::vector<Bytef>& output, int originalSize);

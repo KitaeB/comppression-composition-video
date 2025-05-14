@@ -61,6 +61,8 @@ int main()
                 std::cout << "Error enter number between 1...4" << std::endl;
                 continue;
             }
+            
+            boost::asio::write(socket, boost::asio::buffer(&choice, sizeof(choice)));
             // Обрабатываем выбор
             switch (choice)
             {
@@ -69,6 +71,7 @@ int main()
                 break;
 
             case 2:
+                lz4_concat_prime(socket, cam1, cam2);
                 break;
 
             case 3:

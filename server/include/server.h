@@ -12,6 +12,8 @@
 
 using boost::asio::ip::tcp;
 
+#pragma region tcp_server
+
 //Класс TCP сервера
 class TcpServer 
 {
@@ -37,12 +39,19 @@ struct CameraState {
     std::atomic<bool> running{true};
 };
 
+#pragma endregion
+
+#pragma region common
+
 // Функция захвата кадров для отдельной камеры
 void captureFrames(CameraState& camState, int camIndex);
 
+#pragma endregion
 
 #pragma region methods
 
 void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
 
 #pragma endregion

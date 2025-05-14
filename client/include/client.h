@@ -1,0 +1,11 @@
+#pragma once
+
+#include <boost/asio.hpp>
+#include <opencv2/opencv.hpp>
+#include <iostream>
+#include <fstream>
+
+using boost::asio::ip::tcp;
+
+void lz4_concat_noprime(tcp::socket &socket);
+void lz4_concat_prime(tcp::socket &socket);

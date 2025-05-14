@@ -6,8 +6,11 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
-//
+//из вектора в Mat
 cv::Mat convertFromCleanData(const std::vector<char>& data, int rows, int cols, int type);
+
+//Сложение кадров
+cv::Mat frameAddiiton(const cv::Mat& new_frame, const cv::Mat& old_frame);
 
 // Распаковка lz4
 bool lz4_decompress(const std::vector<char>& compressed, std::vector<char>& output, int originalSize);

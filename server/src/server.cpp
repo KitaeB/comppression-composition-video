@@ -1,6 +1,9 @@
 #include "server.h"
 #include "compression.h"
 
+
+#pragma region tcp_server
+
 TcpServer::TcpServer(const uint16_t port)
     : socket(io_context),
       acceptor(io_context, tcp::endpoint(tcp::v4(), port)),
@@ -39,6 +42,10 @@ bool TcpServer::TestConnect()
     return socket.is_open();
 }
 
+#pragma endregion
+
+#pragma region common
+
 // Функция захвата кадров для отдельной камеры
 void captureFrames(CameraState& camState, int camIndex) {
     camState.cap.set(cv::CAP_PROP_FRAME_WIDTH, VIDEO_WEIGHT);
@@ -63,7 +70,7 @@ void captureFrames(CameraState& camState, int camIndex) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
-
+#pragma endregion
 
 #pragma region methods
 
@@ -78,7 +85,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
     // Запускаем потоки для захвата кадров
     std::thread cam1Thread(captureFrames, std::ref(cam1), 0);
     std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
-
+    
     // Объявляем фреймы
     cv::Mat frame1, frame2, frame, prevFrame;
     std::vector<char> compressed_data, uncompressed_data;
@@ -177,6 +184,140 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                       << " compressed data: " << compressed_size
                       << " koef: " << static_cast<double>(uncompressed_size) / static_cast<double>(compressed_size)
                       << std::endl;
+            if (cv::waitKey(1) == 27)
+            { // Esc key to stop
+                break;
+            }
+        }
+    }
+    // Останавливаем потоки
+    cam1.running = false;
+    cam2.running = false;
+    if (cam1Thread.joinable()) cam1Thread.join();
+    if (cam2Thread.joinable()) cam2Thread.join();
+
+    cam1.cap.release();
+    cam2.cap.release();
+
+    cv::destroyAllWindows();
+}
+
+void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
+{
+    // Проверяем, открылась ли хотя бы одна камера
+    if (!cam1.cap.isOpened() && !cam2.cap.isOpened()) {
+        std::cerr << "No cameras opened" << std::endl;
+        return;
+    }
+
+    // Запускаем потоки для захвата кадров
+    std::thread cam1Thread(captureFrames, std::ref(cam1), 0);
+    std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
+    
+    // Объявляем фреймы
+    cv::Mat frame1, frame2, frame, prevFrame, tempFrame;
+
+    std::vector<char> compressed_data, uncompressed_data;
+    uint16_t acceleration = 1;
+    uint16_t currentFrame = 0;
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    // основной цикл
+    while (true)
+    {
+        t0 = std::chrono::high_resolution_clock::now(); // До получения картинки
+        // Читаем данные с камер
+        bool hasNewFrame = false;
+        {
+            std::lock_guard<std::mutex> lock1(cam1.frameMutex);
+            if (cam1.frameReady && !cam1.lastFrame.empty()) {
+                frame1 = cam1.lastFrame.clone();
+                cam1.frameReady = false;
+                hasNewFrame = true;
+            } else if (!frame1.empty()) {
+                // Используем предыдущий кадр
+            } else {
+                frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+            }
+        }
+        {
+            std::lock_guard<std::mutex> lock2(cam2.frameMutex);
+            if (cam2.frameReady && !cam2.lastFrame.empty()) {
+                frame2 = cam2.lastFrame.clone();
+                cam2.frameReady = false;
+                hasNewFrame = true;
+            } else if (!frame2.empty()) {
+                // Используем предыдущий кадр
+            } else {
+                frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0)); 
+            }
+        }
+        if (!hasNewFrame) {
+            // Если нет новых кадров, ждем немного
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+
+        // После получения
+        t1 = std::chrono::high_resolution_clock::now();
+
+        // производим соединение кадров
+        cv::hconcat(frame1, frame2, frame);
+        tempFrame = frame.clone();
+
+        if ((currentFrame % 20) > 0)
+            frame = frameSubstraction(tempFrame, prevFrame);    //Производим вычитания
+
+        auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+
+        if (last_duration > 30 && acceleration < 100)
+            acceleration++;
+        else if (last_duration < 25 && acceleration > 1)
+            acceleration--;
+        t2 = std::chrono::high_resolution_clock::now(); // Изменение размера и объединение
+
+        // Преобразуем данные в vector<char>
+        uncompressed_data = convertToCleanData(frame);
+        // Сожмём данные с zlib-default
+        if (lz4_compress_fast(uncompressed_data, compressed_data, acceleration) > 0)
+        {
+            t3 = std::chrono::high_resolution_clock::now(); // После сжатия
+            // Объявим метаданные передаваеммого кадра
+            int rows = frame.rows;
+            int cols = frame.cols;
+            int type = frame.type();
+
+            // std::cout << "rows: " << rows << " Cols: " << cols << " Type: " << type << std::endl;
+
+            // Передаём метаданные по сокету
+            boost::asio::write(socket, boost::asio::buffer(&rows, sizeof(rows)));
+            boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
+            boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
+            boost::asio::write(socket, boost::asio::buffer(&currentFrame, sizeof(currentFrame)));
+
+            int compressed_size = compressed_data.size();
+            boost::asio::write(socket, boost::asio::buffer(&compressed_size, sizeof(compressed_size)));
+
+            int uncompressed_size = uncompressed_data.size();
+            boost::asio::write(socket, boost::asio::buffer(&uncompressed_size, sizeof(uncompressed_size)));
+
+            // Отправка данных клиенту
+            boost::asio::write(socket, boost::asio::buffer(compressed_data));
+
+            t4 = std::chrono::high_resolution_clock::now(); // После передачи
+            prevFrame = tempFrame.clone();
+
+            std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                      << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                      << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                      << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
+                      << " acceleration: " << acceleration
+                      << " uncompressed data: " << uncompressed_size
+                      << " compressed data: " << compressed_size
+                      << " koef: " << static_cast<double>(uncompressed_size) / static_cast<double>(compressed_size)
+                      << std::endl;
+            currentFrame ++;
             if (cv::waitKey(1) == 27)
             { // Esc key to stop
                 break;

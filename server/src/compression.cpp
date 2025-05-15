@@ -19,17 +19,25 @@ cv::Mat frameSubstraction(const cv::Mat& new_frame, const cv::Mat& old_frame){
     return result;
 }
 
-//Конвертируем в чистые данные
-std::vector<char>& convertToCleanData(const cv::Mat& frame) {
-    std::vector<char>* data = new std::vector<char>();
+//Конвертируем в чистые данные Char
+void convertToCleanDataChar(const cv::Mat& frame, std::vector<char>& data) {
     if (frame.isContinuous()) {
-        data->assign(frame.data, frame.data + frame.total() * frame.elemSize());
+        data.assign(frame.data, frame.data + frame.total() * frame.elemSize());
     } else {
         for (int i = 0; i < frame.rows; ++i) {
-            data->insert(data->end(), frame.ptr<char>(i), frame.ptr<char>(i) + frame.cols * frame.elemSize());
+            data.insert(data.end(), frame.ptr<char>(i), frame.ptr<char>(i) + frame.cols * frame.elemSize());
         }
     }
-    return *data;
+}
+//Конвертируем в чистые данные Bytef
+void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data) {
+    if (frame.isContinuous()) {
+        data.assign(frame.data, frame.data + frame.total() * frame.elemSize());
+    } else {
+        for (int i = 0; i < frame.rows; ++i) {
+            data.insert(data.end(), frame.ptr<Bytef>(i), frame.ptr<Bytef>(i) + frame.cols * frame.elemSize());
+        }
+    }
 }
 
 #pragma endregion

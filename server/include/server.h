@@ -54,4 +54,5 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
 void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
 
+void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2); 
 #pragma endregion

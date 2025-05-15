@@ -9,3 +9,4 @@ using boost::asio::ip::tcp;
 
 void lz4_concat_noprime(tcp::socket &socket);
 void lz4_concat_prime(tcp::socket &socket);
+void zlib_concat_noprime(tcp::socket &socket);

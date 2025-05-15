@@ -7,7 +7,8 @@
 
 //Общие методы для работы с изорбражениями
 cv::Mat frameSubstraction(const cv::Mat& new_frame, const cv::Mat& old_frame);
-std::vector<char>& convertToCleanData(const cv::Mat& frame);
+void convertToCleanDataChar(const cv::Mat& frame, std::vector<char>& data);
+void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data);
 
 //Методы сжатия LZ4
 int lz4_compress_default(const std::vector<char>& input, std::vector<char>& compressed);

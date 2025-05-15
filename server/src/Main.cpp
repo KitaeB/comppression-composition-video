@@ -81,6 +81,7 @@ int main()
                 break;
 
             case 5:
+                zlib_concat_noprime(socket, cam1, cam2);
                 break;
 
             case 6:

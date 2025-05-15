@@ -36,6 +36,7 @@ int main()
                 break;
 
             case 5:
+                zlib_concat_noprime(socket);
                 break;
 
             case 6:

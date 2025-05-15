@@ -93,5 +93,6 @@
         "regex": "cpp",
         "unordered_set": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "C:/Users/Kitae/source/repos/KitaeB/comppression-composition-video/server"
 }

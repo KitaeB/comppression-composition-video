@@ -7,7 +7,10 @@
 #include <opencv2/opencv.hpp>
 
 //из вектора в Mat
-cv::Mat convertFromCleanData(const std::vector<char>& data, int rows, int cols, int type);
+cv::Mat convertFromCleanDataChar(const std::vector<char>& data, int rows, int cols, int type);
+
+//из вектора в Mat
+cv::Mat convertFromCleanDataBytef(const std::vector<Bytef>& data, int rows, int cols, int type);
 
 //Сложение кадров
 cv::Mat frameAddiiton(const cv::Mat& new_frame, const cv::Mat& old_frame);

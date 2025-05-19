@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 
 //Общие методы для работы с изорбражениями
-cv::Mat frameSubstraction(const cv::Mat& new_frame, const cv::Mat& old_frame);
+cv::Mat frameSubstraction(const cv::Mat& frame, const cv::Mat& old_frame);
 void convertToCleanDataChar(const cv::Mat& frame, std::vector<char>& data);
 void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data);
 

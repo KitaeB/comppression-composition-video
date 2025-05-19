@@ -3,25 +3,20 @@
 #include "compression.h"
 
 #pragma region common
-cv::Mat frameSubstraction(const cv::Mat& new_frame, const cv::Mat& old_frame){
-        // Преобразуем кадры в 16-битный формат со знаком (CV_16S)
-    cv::Mat new_frame_16, old_frame_16;
-    new_frame.convertTo(new_frame_16, CV_16S);
-    old_frame.convertTo(old_frame_16, CV_16S);
+cv::Mat frameSubstraction(const cv::Mat& frame, const cv::Mat& old_frame){
+    cv::Mat delta;
+    cv::subtract(frame, old_frame, delta, cv::noArray(), CV_16SC3);  // Сначала вычисляем в CV_16SC3
 
-    // Вычисляем разницу между кадрами
-    cv::Mat diff = new_frame_16 - old_frame_16;
+    // Преобразуем в CV_8SC3
+    cv::Mat delta_8bit;
+    delta.convertTo(delta_8bit, CV_8SC3);
+    return delta_8bit;
 
-    // Преобразуем результат обратно в 8-битный формат
-    cv::Mat result;
-    diff.convertTo(result, CV_8U);
-
-    return result;
 }
 
 //Конвертируем в чистые данные Char
 void convertToCleanDataChar(const cv::Mat& frame, std::vector<char>& data) {
-    if (frame.isContinuous()) {
+    if (frame.isContinuous()) { 
         data.assign(frame.data, frame.data + frame.total() * frame.elemSize());
     } else {
         for (int i = 0; i < frame.rows; ++i) {

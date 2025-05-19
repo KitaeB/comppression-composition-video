@@ -71,10 +71,11 @@ int main()
                 break;
 
             case 2:
-                lz4_concat_prime(socket, cam1, cam2);
+                lz4_concat_prime(socket, cam1, cam2);   // хз, не работает
                 break;
 
             case 3:
+                lz4_noconcat_noprime(socket, cam1, cam2);
                 break;
 
             case 4:
@@ -88,6 +89,7 @@ int main()
                 break;
 
             case 7:
+                zlib_noconcat_noprime(socket, cam1, cam2);
                 break;
 
             case 8:

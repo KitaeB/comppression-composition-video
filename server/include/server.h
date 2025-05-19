@@ -7,8 +7,8 @@
 #include <mutex>
 #include <thread>
 
-#define VIDEO_WEIGHT 640
-#define VIDEO_HEIGHT 480
+#define VIDEO_WEIGHT 1280
+#define VIDEO_HEIGHT 720
 
 using boost::asio::ip::tcp;
 
@@ -54,5 +54,10 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
 void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
 
-void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2); 
+void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2); 
+
 #pragma endregion

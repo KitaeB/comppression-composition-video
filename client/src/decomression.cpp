@@ -3,19 +3,9 @@
 #pragma region common
 
 cv::Mat frameAddiiton(const cv::Mat& diff, const cv::Mat& old_frame){
-        // Преобразуем кадры в 16-битный формат со знаком (CV_16S)
-    cv::Mat diff_16, old_frame_16;
-    diff.convertTo(diff_16, CV_16S);
-    old_frame.convertTo(old_frame_16, CV_16S);
-
-    // Вычисляем разницу между кадрами
-    cv::Mat sum = old_frame_16 + diff_16;
-
-    // Преобразуем результат обратно в 8-битный формат
-    cv::Mat result;
-    sum.convertTo(result, CV_8U);
-
-    return result;
+    cv::Mat frame;
+    cv::add(old_frame, diff, frame, cv::noArray(), CV_8UC3);
+    return frame;
 }
 
 cv::Mat convertFromCleanDataChar(const std::vector<char>& data, int rows, int cols, int type) {

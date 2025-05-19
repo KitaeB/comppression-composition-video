@@ -30,8 +30,8 @@ int main()
                 break;
 
             case 3:
+                lz4_noconcat_noprime(socket);
                 break;
-
             case 4:
                 break;
 
@@ -43,6 +43,7 @@ int main()
                 break;
 
             case 7:
+                zlib_noconcat_noprime(socket); 
                 break;
 
             case 8:
@@ -75,7 +76,6 @@ int main()
             default:
                 std::cout << "Error enter number between 1...16" << std::endl;
             }
-            lz4_concat_noprime(socket);
         }
         catch (const std::exception &ex)
         {

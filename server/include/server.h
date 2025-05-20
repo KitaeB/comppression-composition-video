@@ -60,4 +60,6 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
 void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2); 
 
+void aom_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
 #pragma endregion

@@ -12,3 +12,4 @@ void lz4_concat_prime(tcp::socket &socket);
 void lz4_noconcat_noprime(tcp::socket &socket);
 void zlib_concat_noprime(tcp::socket &socket);
 void zlib_noconcat_noprime(tcp::socket &socket);
+void aom_concat_noprime(tcp::socket &socket);

@@ -1,8 +1,13 @@
 #pragma once
 
 #include <lz4.h>
+
+#include <opencv2/core/mat.hpp>
 #include <zlib.h>
-//#include <aom.h>
+
+#include <aom/aom_decoder.h>
+#include <aom/aomdx.h>
+
 #include <vector>
 #include <opencv2/opencv.hpp>
 
@@ -20,3 +25,6 @@ bool lz4_decompress(const std::vector<char>& compressed, std::vector<char>& outp
 
 // Распаковка zlib
 int zlib_decompress(const std::vector<Bytef>& compressed, std::vector<Bytef>& output, int originalSize);
+
+// Распаковка aom
+bool aom_decompress(const std::vector<uint8_t>& encoded_data, cv::Mat& frame);

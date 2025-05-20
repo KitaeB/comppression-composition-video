@@ -1,4 +1,5 @@
 #include <decomression.h> 
+#include <opencv2/core/mat.hpp>
 
 #pragma region common
 
@@ -94,5 +95,51 @@ int zlib_decompress(const std::vector<Bytef>& compressed_data, std::vector<Bytef
 
     return 0; // Успешная распаковка
 }
+
+#pragma endregion
+
+#pragma region aom
+
+bool aom_decompress(const std::vector<uint8_t>& encoded_data, cv::Mat& frame) {
+    aom_codec_ctx_t decoder;
+    if (aom_codec_dec_init(&decoder, aom_codec_av1_dx(), nullptr, 0)) {
+        throw std::runtime_error("aom_codec_dec_init failed");
+        return false;
+    }
+
+    if (aom_codec_decode(&decoder, encoded_data.data(), encoded_data.size(), nullptr)) {
+        throw std::runtime_error("aom_codec_decode failed");
+        return false;
+    }
+
+    aom_codec_iter_t iter = nullptr;
+    aom_image_t* img = aom_codec_get_frame(&decoder, &iter);
+
+    if (!img) {
+        throw std::runtime_error("No frame was decoded");
+        return false;
+    }
+
+    int width = img->d_w;
+    int height = img->d_h;
+
+    cv::Mat y(height, width, CV_8UC1, img->planes[0], img->stride[0]);
+    cv::Mat u(height / 2, width / 2, CV_8UC1, img->planes[1], img->stride[1]);
+    cv::Mat v(height / 2, width / 2, CV_8UC1, img->planes[2], img->stride[2]);
+
+    cv::Mat u_resized, v_resized;
+    cv::resize(u, u_resized, y.size(), 0, 0, cv::INTER_LINEAR);
+    cv::resize(v, v_resized, y.size(), 0, 0, cv::INTER_LINEAR);
+
+    std::vector<cv::Mat> channels = {y, u_resized, v_resized};
+    cv::Mat yuv, bgr;
+    cv::merge(channels, yuv);
+    cv::cvtColor(yuv, bgr, cv::COLOR_YUV2BGR);
+    frame = bgr.clone();
+    aom_codec_destroy(&decoder);
+    
+    return true;
+}
+
 
 #pragma endregion

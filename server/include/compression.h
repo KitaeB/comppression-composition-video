@@ -1,7 +1,13 @@
 #pragma once
 
 #include <lz4.h>
+
 #include <zlib.h>
+
+#include <aom/aom_codec.h>
+#include <aom/aom_encoder.h>
+#include <aom/aomcx.h>
+
 #include <vector>
 #include <opencv2/opencv.hpp>
 
@@ -19,4 +25,5 @@ int zlib_compress_default(const std::vector<Bytef>& input, std::vector<Bytef>& c
 int zlib_compress_fast(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 int zlib_compress_high(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 
-//Методы сжатия AV1
+//Методы сжатия aom
+int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed_data);

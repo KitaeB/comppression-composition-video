@@ -26,20 +26,22 @@ int main()
                 break;
 
             case 2:
-                lz4_concat_prime(socket);
+                lz4_concat_prime(socket);   //пу пу пу, не работает
                 break;
 
             case 3:
                 lz4_noconcat_noprime(socket);
                 break;
             case 4:
+                //пу пу пу, не работает
                 break;
-
+                
             case 5:
                 zlib_concat_noprime(socket);
                 break;
 
             case 6:
+                //пу пу пу, не работает
                 break;
 
             case 7:
@@ -50,6 +52,7 @@ int main()
                 break;
 
             case 9:
+                aom_concat_noprime(socket);
                 break;
 
             case 10:

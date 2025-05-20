@@ -1,11 +1,7 @@
 #include <boost/asio.hpp>
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include <vector>
-#include <thread>
-#include <mutex>
 
-#include "compression.h"
 #include "server.h"
 
 using boost::asio::ip::tcp;
@@ -16,8 +12,8 @@ int main()
     TcpServer server(9090);
 
     // Подключаем камеры
-    CameraState cam1{cv::VideoCapture(0, cv::CAP_ANY)};
-    CameraState cam2{cv::VideoCapture(1, cv::CAP_ANY)};
+    CameraState cam1{cv::VideoCapture(0, cv::CAP_DSHOW)};
+    CameraState cam2{cv::VideoCapture(1, cv::CAP_DSHOW)};
 
     int choice = 0;
     // std::vector<Bytef> compressed_data;
@@ -96,6 +92,7 @@ int main()
                 break;
 
             case 9:
+                aom_concat_noprime(socket, cam1, cam2);
                 break;
 
             case 10:

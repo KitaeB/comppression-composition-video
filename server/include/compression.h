@@ -26,4 +26,5 @@ int zlib_compress_fast(const std::vector<Bytef>& input, std::vector<Bytef>& comp
 int zlib_compress_high(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 
 //Методы сжатия aom
-int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed_data);
+aom_codec_ctx_t create_aom_encoder(const cv::Mat& frame, bool lossless, int target_fps, double bpp);  // bits per pixel (только для сжатия с потерями)
+int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed_data, aom_codec_ctx_t& encoder);

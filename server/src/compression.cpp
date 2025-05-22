@@ -1,3 +1,4 @@
+#include <aom/aom_codec.h>
 #include <cstdint>
 #include <opencv2/opencv.hpp>
 #include <vector>
@@ -121,47 +122,83 @@ int zlib_compress_high(const std::vector<Bytef>& input, std::vector<Bytef>& comp
 
 #pragma region aom
 
-int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed_data) {
+aom_codec_ctx_t create_aom_encoder(
+    const cv::Mat& frame,
+    bool lossless = false,
+    int target_fps = 30,
+    double bpp = 0.1  // bits per pixel (только для сжатия с потерями)
+) {
+    if (frame.empty()) {
+        throw std::invalid_argument("select_aom_codec_config: пустое изображение");
+    }
+
     const int width = frame.cols;
     const int height = frame.rows;
+    aom_codec_ctx_t encoder;
 
+    // Получаем конфигурацию по умолчанию
+    aom_codec_enc_cfg_t cfg;
+    if (aom_codec_enc_config_default(aom_codec_av1_cx(), &cfg, 0)) {
+        throw std::runtime_error("aom_codec_enc_config_default failed");
+    }
+
+    // Базовые параметры
+    cfg.g_w = width;
+    cfg.g_h = height;
+    cfg.g_timebase.num = 1;
+    cfg.g_timebase.den = target_fps;
+    cfg.g_pass = AOM_RC_ONE_PASS;
+    cfg.g_lag_in_frames = 0;
+
+    if (lossless) {
+        // Режим без потерь
+        //cfg.g_lossless = 1;   нет такого парамаметра
+        cfg.rc_target_bitrate = 0;
+        cfg.rc_min_quantizer = 0;
+        cfg.rc_max_quantizer = 0;
+    } else {
+        // Режим с потерями, рассчитываем битрейт на основе bpp
+        int bitrate_kbps = static_cast<int>(width * height * target_fps * bpp / 1000.0);
+        cfg.rc_target_bitrate = bitrate_kbps;
+
+        // Рекомендованные квантизаторы
+        cfg.rc_min_quantizer = 10;   // Лучше качество — меньше значение
+        cfg.rc_max_quantizer = 40;
+    }
+    if (aom_codec_enc_init(&encoder, aom_codec_av1_cx(), &cfg, 0))
+        throw std::runtime_error("Encoder init failed");
+
+    if (lossless) {
+        if (aom_codec_control(&encoder, AV1E_SET_LOSSLESS, 1))
+            throw std::runtime_error("AV1E_SET_LOSSLESS failed");
+
+        if (aom_codec_control(&encoder, AOME_SET_CPUUSED, 8))
+            throw std::runtime_error("AOME_SET_CPUUSED failed");    }
+    encoder.name = "enc";
+    return encoder;
+}
+
+int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed_data, aom_codec_ctx_t& encoder) {
+    const int width = frame.cols;
+    const int height = frame.rows;
+    
     // 1. Преобразуем в YUV420
     cv::Mat yuv_img;
     cv::cvtColor(frame, yuv_img, cv::COLOR_BGR2YUV_I420);
     std::vector<uint8_t> yuv_data(yuv_img.data, yuv_img.data + yuv_img.total());
 
-    // 2. Настройка AOM кодера
-    aom_codec_ctx_t encoder;
-    aom_codec_enc_cfg_t cfg;
-
-    if (aom_codec_enc_config_default(aom_codec_av1_cx(), &cfg, 0)) {
-        throw std::runtime_error("aom_codec_enc_config_default failed");
-    }
-
-    cfg.g_w = width;
-    cfg.g_h = height;
-    cfg.g_timebase.num = 1;
-    cfg.g_timebase.den = 30;
-    cfg.rc_target_bitrate = 500; // kbps
-    cfg.g_pass = AOM_RC_ONE_PASS;
-    cfg.g_lag_in_frames = 0;
-
-    if (aom_codec_enc_init(&encoder, aom_codec_av1_cx(), &cfg, 0)) {
-        throw std::runtime_error("aom_codec_enc_init failed");
-    }
-
-    // 3. Оборачиваем YUV буфер в aom_image_t
+    // 2. Оборачиваем YUV буфер в aom_image_t
     aom_image_t raw;
     if (!aom_img_wrap(&raw, AOM_IMG_FMT_I420, width, height, 1, yuv_data.data())) {
         throw std::runtime_error("aom_img_wrap failed");
     }
 
-    // 4. Кодируем один кадр
+    // 3. Кодируем один кадр
     if (aom_codec_encode(&encoder, &raw, 0, 1, 0)) {
         throw std::runtime_error("aom_codec_encode failed");
     }
 
-    // 5. Получаем закодированные данные
+    // 4. Получаем закодированные данные
     aom_codec_iter_t iter = nullptr;
     const aom_codec_cx_pkt_t* pkt;
 
@@ -171,8 +208,6 @@ int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed
             compressed_data.insert(compressed_data.end(), data, data + pkt->data.frame.sz);
         }
     }
-
-    aom_codec_destroy(&encoder);
     return compressed_data.size();
 }
 

@@ -1,5 +1,7 @@
 #include "server.h"
 #include "compression.h"
+#include <aom/aom_codec.h>
+#include <ostream>
 
 
 #pragma region tcp_server
@@ -218,6 +220,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
     std::vector<char> compressed_data, uncompressed_data;
     uint16_t acceleration = 1;
     uint16_t currentFrame = 0;
+
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
     // основной цикл
@@ -262,7 +265,6 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
         // производим соединение кадров
         cv::hconcat(frame1, frame2, frame);
         //cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
-
         tempFrame = frame.clone();
         if ((currentFrame % 20) > 0){
             frame = frameSubstraction(tempFrame, prevFrame);    //Производим вычитания
@@ -735,6 +737,8 @@ void aom_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
     cv::Mat frame1, frame2, frame, prevFrame;
     std::vector<uint8_t> compressed_data;
 
+    // Енкодер
+    aom_codec_ctx_t encoder = {};
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
     // основной цикл
@@ -780,11 +784,22 @@ void aom_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
         // производим соединение кадров
         cv::hconcat(frame1, frame2, frame);
 
+        if (!encoder.name) {
+            std::cout << "Initialize encoder..." << std::endl;
+            encoder = create_aom_encoder(frame, false, 30, 0.1);
+
+            std::cout << "encoder initialaze " << encoder.name << std::endl;
+        } else {
+            std::cout << "encoder initialaze " << encoder.name << std::endl;
+        }
+
         t2 = std::chrono::high_resolution_clock::now(); // Изменение размера и объединение
 
         // Сожмём данные с zlib-default
-        if (aom_compress_loseless(frame, compressed_data) > 0)
+        if (aom_compress_loseless(frame, compressed_data, encoder) > 0)
         {
+            
+            std::cout << "frame is compressed " << encoder.name << std::endl;
             t3 = std::chrono::high_resolution_clock::now(); // После сжатия
             // Объявим метаданные передаваеммого кадра
             int rows = frame.rows;
@@ -812,9 +827,9 @@ void aom_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                       << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
-                      << " uncompressed data: " << frame.rows * frame.cols * 24
+                      << " uncompressed data: " << frame.total() * frame.elemSize()
                       << " compressed data: " << compressed_size
-                      << " koef: " << static_cast<double>(frame.rows * frame.cols * 24) / static_cast<double>(compressed_size)
+                      << " koef: " << static_cast<double>(frame.total() * frame.elemSize()) / static_cast<double>(compressed_size)
                       << std::endl;
             if (cv::waitKey(1) == 27)
             { // Esc key to stop
@@ -833,6 +848,10 @@ void aom_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
     cam1.cap.release();
     cam2.cap.release();
+
+    if (encoder.name) {
+        aom_codec_destroy(&encoder);
+    }
 
     cv::destroyAllWindows();
 }

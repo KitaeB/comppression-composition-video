@@ -178,37 +178,57 @@ aom_codec_ctx_t create_aom_encoder(
     return encoder;
 }
 
-int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed_data, aom_codec_ctx_t& encoder) {
+int aom_compress_loseless(const cv::Mat& frame, std::vector<uint8_t>& compressed_data, aom_codec_ctx_t& encoder, int frame_count) {
     const int width = frame.cols;
     const int height = frame.rows;
-    
-    // 1. Преобразуем в YUV420
+
+    if (frame.empty() || width <= 0 || height <= 0 || width % 2 != 0 || height % 2 != 0) {
+        throw std::invalid_argument("Invalid frame dimensions");
+    }
+
+    // 1. Конвертируем BGR → YUV420
     cv::Mat yuv_img;
     cv::cvtColor(frame, yuv_img, cv::COLOR_BGR2YUV_I420);
-    std::vector<uint8_t> yuv_data(yuv_img.data, yuv_img.data + yuv_img.total());
+    if (!yuv_img.isContinuous() || yuv_img.total() != width * height * 3 / 2) {
+        throw std::runtime_error("Unexpected YUV layout");
+    }
 
-    // 2. Оборачиваем YUV буфер в aom_image_t
+    // 2. Создаём изображение AOM (с внутренним буфером)
     aom_image_t raw;
-    if (!aom_img_wrap(&raw, AOM_IMG_FMT_I420, width, height, 1, yuv_data.data())) {
-        throw std::runtime_error("aom_img_wrap failed");
+    if (!aom_img_alloc(&raw, AOM_IMG_FMT_I420, width, height, 1)) {
+        throw std::runtime_error("aom_img_alloc failed");
     }
 
-    // 3. Кодируем один кадр
-    if (aom_codec_encode(&encoder, &raw, 0, 1, 0)) {
-        throw std::runtime_error("aom_codec_encode failed");
+    // 3. Копируем данные из YUV в raw.planes[0/1/2]
+    const int y_size  = width * height;
+    const int uv_size = y_size / 4;
+
+    std::memcpy(raw.planes[0], yuv_img.data, y_size);                          // Y
+    std::memcpy(raw.planes[1], yuv_img.data + y_size, uv_size);               // U
+    std::memcpy(raw.planes[2], yuv_img.data + y_size + uv_size, uv_size);     // V
+
+    // 4. Кодируем
+    compressed_data.clear();
+    if (aom_codec_encode(&encoder, &raw, frame_count, 1, 0)) {
+        std::string err = aom_codec_error(&encoder);
+        std::string detail = aom_codec_error_detail(&encoder);
+        aom_img_free(&raw);
+        throw std::runtime_error("aom_codec_encode failed: " + err + " — " + detail);
     }
 
-    // 4. Получаем закодированные данные
+    // 5. Получаем результат
     aom_codec_iter_t iter = nullptr;
     const aom_codec_cx_pkt_t* pkt;
-
     while ((pkt = aom_codec_get_cx_data(&encoder, &iter))) {
         if (pkt->kind == AOM_CODEC_CX_FRAME_PKT) {
             const uint8_t* data = static_cast<const uint8_t*>(pkt->data.frame.buf);
             compressed_data.insert(compressed_data.end(), data, data + pkt->data.frame.sz);
         }
     }
-    return compressed_data.size();
+
+    // 6. Освобождаем ресурсы
+    aom_img_free(&raw);
+    return static_cast<int>(compressed_data.size());
 }
 
 #pragma endregion

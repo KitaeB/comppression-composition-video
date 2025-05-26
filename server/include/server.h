@@ -2,13 +2,11 @@
 
 #include <boost/asio.hpp>
 #include <opencv2/opencv.hpp>
-#include <iostream>
 #include <atomic>
 #include <mutex>
-#include <thread>
 
-#define VIDEO_WEIGHT 1280
-#define VIDEO_HEIGHT 720
+#define VIDEO_WEIGHT 1920
+#define VIDEO_HEIGHT 1080
 
 using boost::asio::ip::tcp;
 
@@ -37,6 +35,7 @@ struct CameraState {
     std::atomic<bool> frameReady{false};
     std::mutex frameMutex;
     std::atomic<bool> running{true};
+    int currentFrame;
 };
 
 #pragma endregion
@@ -56,10 +55,22 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
 
 void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
 
+void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
 void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
 
 void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2); 
 
+void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2); 
+
 void aom_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void aom_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void aom_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void aom_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
 
 #pragma endregion

@@ -8,8 +8,10 @@ std::string HOST;
 int main() {
   while (true) {
     try {
-      std::cout << "Enter HOST: ";
-      std::cin >> HOST;
+      std::cout << "Enter HOST (default localhost): ";
+      std::getline(std::cin, HOST);
+      if (HOST.empty())
+        HOST = "127.0.0.1";
       std::cout << "    Your host is " << HOST << std::endl;
 
       boost::asio::io_context io_context;
@@ -35,14 +37,14 @@ int main() {
         break;
 
       case 2:
-        lz4_concat_prime(socket); // пу пу пу, не работает
+        lz4_concat_prime(socket);
         break;
 
       case 3:
         lz4_noconcat_noprime(socket);
         break;
       case 4:
-        // пу пу пу, не работает
+        lz4_noconcat_prime(socket);
         break;
 
       case 5:

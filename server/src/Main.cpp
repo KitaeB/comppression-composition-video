@@ -90,6 +90,7 @@ int main() {
           break;
 
         case 4:
+          lz4_noconcat_prime(socket, cam1, cam2);
           break;
 
         case 5:
@@ -100,7 +101,6 @@ int main() {
           break;
 
         case 7:
-          zlib_noconcat_noprime(socket, cam1, cam2);
           break;
 
         case 8:

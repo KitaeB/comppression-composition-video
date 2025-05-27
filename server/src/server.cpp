@@ -2,6 +2,7 @@
 #include "compression.h"
 #include <aom/aom_codec.h>
 #include <exception>
+#include <iostream>
 #include <opencv2/highgui.hpp>
 #include <ostream>
 
@@ -21,7 +22,7 @@ void TcpServer::NewConnect()
     if (socket.is_open())
     {
         boost::system::error_code ec;
-        socket.close(ec);
+        socket.close();
         if (ec)
         {
             std::cerr << "Error connection close" << std::endl;
@@ -91,8 +92,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
     
     // Объявляем фреймы
     cv::Mat frame1, frame2, frame, prevFrame;
-    std::vector<char> compressed_data, uncompressed_data;
-    uint16_t acceleration = 1;
+    LZ4Coder lz4Coder;
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
@@ -141,16 +141,14 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
         auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-        if (last_duration > 20 && acceleration < 100)
-            acceleration++;
-        else if (last_duration < 15 && acceleration > 1)
-            acceleration--;
+        if (last_duration > 20 && lz4Coder.acceleration < 100)
+            lz4Coder.acceleration++;
+        else if (last_duration < 15 && lz4Coder.acceleration > 1)
+            lz4Coder.acceleration--;
         t2 = std::chrono::high_resolution_clock::now(); // Изменение размера и объединение
-
-        // Преобразуем данные в vector<char>
-        convertToCleanDataChar(frame, uncompressed_data);
-        // Сожмём данные с zlib-default
-        if (lz4_compress_fast(uncompressed_data, compressed_data, acceleration) > 0)
+        
+        // Сожмём данные с lz4-fast
+        if (lz4Coder.lz4_compress_fast(frame) > 0)
         {
             t3 = std::chrono::high_resolution_clock::now(); // После сжатия
             // Объявим метаданные передаваеммого кадра
@@ -165,14 +163,12 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
             boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
 
-            int compressed_size = compressed_data.size();
-            boost::asio::write(socket, boost::asio::buffer(&compressed_size, sizeof(compressed_size)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder.compressedSize, sizeof(lz4Coder.compressedSize)));
 
-            int uncompressed_size = uncompressed_data.size();
-            boost::asio::write(socket, boost::asio::buffer(&uncompressed_size, sizeof(uncompressed_size)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder.uncompressedSize, sizeof(lz4Coder.uncompressedSize)));
 
             // Отправка данных клиенту
-            boost::asio::write(socket, boost::asio::buffer(compressed_data));
+            boost::asio::write(socket, boost::asio::buffer(lz4Coder.compressedData));
 
             t4 = std::chrono::high_resolution_clock::now(); // После передачи
             prevFrame = frame.clone();
@@ -182,10 +178,10 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                       << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
-                      << " acceleration: " << acceleration
-                      << " uncompressed data: " << uncompressed_size
-                      << " compressed data: " << compressed_size
-                      << " koef: " << static_cast<double>(uncompressed_size) / static_cast<double>(compressed_size)
+                      << " acceleration: " << lz4Coder.acceleration
+                      << " uncompressed data: " << lz4Coder.uncompressedSize
+                      << " compressed data: " << lz4Coder.compressedSize
+                      << " koef: " << static_cast<double>(lz4Coder.uncompressedSize) / static_cast<double>(lz4Coder.compressedSize)
                       << std::endl;
             if (cv::waitKey(1) == 27)
             { // Esc key to stop
@@ -215,13 +211,11 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
     // Запускаем потоки для захвата кадров
     std::thread cam1Thread(captureFrames, std::ref(cam1), 0);
     std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
-    
+
     // Объявляем фреймы
     cv::Mat frame1, frame2, frame, prevFrame, tempFrame;
-
-    std::vector<char> compressed_data, uncompressed_data;
-    uint16_t acceleration = 1;
-    uint16_t currentFrame = 0;
+    uint16_t currentFrame;
+    LZ4Coder lz4Coder;
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
@@ -266,25 +260,26 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
 
         // производим соединение кадров
         cv::hconcat(frame1, frame2, frame);
-        //cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
+        
+        // cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
         tempFrame = frame.clone();
-        if ((currentFrame % 30) > 0){
-            frame = frameSubstraction(tempFrame, prevFrame);    //Производим вычитания
+
+        if ((currentFrame % 30) > 0 && !prevFrame.empty()) {
+            frame = frameSubstraction(frame, prevFrame);    //Производим вычитания
         }
 
         prevFrame = tempFrame.clone();
         auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-        if (last_duration > 20 && acceleration < 200)
-            acceleration++;
-        else if (last_duration < 15 && acceleration > 1)
-            acceleration--;
+        if (last_duration > 20 && lz4Coder.acceleration < 200)
+            lz4Coder.acceleration++;
+        else if (last_duration < 15 && lz4Coder.acceleration > 1)
+            lz4Coder.acceleration--;
+        
         t2 = std::chrono::high_resolution_clock::now(); // Изменение размера и объединение
 
-        // Преобразуем данные в vector<char>
-        convertToCleanDataChar(frame, uncompressed_data);
         // Сожмём данные с zlib-default
-        if (lz4_compress_fast(uncompressed_data, compressed_data, acceleration) > 0)
+        if (lz4Coder.lz4_compress_fast(frame) > 0)
         {
             t3 = std::chrono::high_resolution_clock::now(); // После сжатия
             // Объявим метаданные передаваеммого кадра
@@ -298,14 +293,12 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
             boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
             boost::asio::write(socket, boost::asio::buffer(&currentFrame, sizeof(currentFrame)));
 
-            int compressed_size = compressed_data.size();
-            boost::asio::write(socket, boost::asio::buffer(&compressed_size, sizeof(compressed_size)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder.compressedSize, sizeof(lz4Coder.compressedSize)));
 
-            int uncompressed_size = uncompressed_data.size();
-            boost::asio::write(socket, boost::asio::buffer(&uncompressed_size, sizeof(uncompressed_size)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder.uncompressedSize, sizeof(lz4Coder.uncompressedSize)));
 
             // Отправка данных клиенту
-            boost::asio::write(socket, boost::asio::buffer(compressed_data));
+            boost::asio::write(socket, boost::asio::buffer(lz4Coder.compressedData));
 
             t4 = std::chrono::high_resolution_clock::now(); // После передачи
 
@@ -314,11 +307,11 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
                       << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
-                      << " acceleration: " << acceleration
+                      << " acceleration: " << lz4Coder.acceleration
                       << " currentFrame: " << currentFrame
-                      << " uncompressed data: " << uncompressed_size
-                      << " compressed data: " << compressed_size
-                      << " koef: " << static_cast<double>(uncompressed_size) / static_cast<double>(compressed_size)
+                      << " uncompressed data: " << lz4Coder.uncompressedSize
+                      << " compressed data: " << lz4Coder.compressedSize
+                      << " koef: " << static_cast<double>(lz4Coder.uncompressedSize) / static_cast<double>(lz4Coder.compressedSize)
                       << std::endl;
             currentFrame ++;
 
@@ -353,8 +346,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
     
     // Объявляем фреймы
     cv::Mat frame1, frame2, frame, prevFrame;
-    std::vector<char> compressed_data_frame_1, compressed_data_frame_2, uncompressed_data_frame_1, uncompressed_data_frame_2;
-    uint16_t acceleration = 1;
+    LZ4Coder lz4Coder1, lz4Coder2;
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
@@ -396,20 +388,16 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
         }
         auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-        if (last_duration > 20 && acceleration < 100)
-            acceleration++;
-        else if (last_duration < 15 && acceleration > 1)
-            acceleration--;
+        if (last_duration > 20 && lz4Coder1.acceleration < 100)
+            lz4Coder1.acceleration++;
+        else if (last_duration < 15 && lz4Coder1.acceleration > 1)
+            lz4Coder1.acceleration--;
+        lz4Coder2.acceleration = lz4Coder1.acceleration;
+
         t2 = std::chrono::high_resolution_clock::now(); // Изменение размера и объединение
 
-        // Преобразуем данные в vector<char>
-        convertToCleanDataChar(frame1, uncompressed_data_frame_1);
-        
-        // Преобразуем данные в vector<char>
-        convertToCleanDataChar(frame2, uncompressed_data_frame_2);
-
         // Сожмём данные с zlib-default
-        if ((lz4_compress_fast(uncompressed_data_frame_1, compressed_data_frame_1, acceleration) > 0) && (lz4_compress_fast(uncompressed_data_frame_2, compressed_data_frame_2, acceleration) > 0))
+        if ((lz4Coder1.lz4_compress_fast(frame1) > 0) && (lz4Coder2.lz4_compress_fast(frame2) > 0))
         {
             t3 = std::chrono::high_resolution_clock::now(); // После сжатия
             // Объявим метаданные передаваеммого кадра
@@ -425,21 +413,18 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
             boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
             
             //Размер сжатых данных первого кадра
-            int compressed_size_frame_1 = compressed_data_frame_1.size();
-            boost::asio::write(socket, boost::asio::buffer(&compressed_size_frame_1, sizeof(compressed_size_frame_1)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder1.compressedSize, sizeof(lz4Coder1.compressedSize)));
 
             //Размер сжатых данных второго кадра
-            int compressed_size_frame_2 = compressed_data_frame_2.size();
-            boost::asio::write(socket, boost::asio::buffer(&compressed_size_frame_2, sizeof(compressed_size_frame_2)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder2.compressedSize, sizeof(lz4Coder2.compressedSize)));
 
             //Мы считаем, что исходные данные одинаковые по размеры
-            int uncompressed_size = uncompressed_data_frame_1.size();
-            boost::asio::write(socket, boost::asio::buffer(&uncompressed_size, sizeof(uncompressed_size)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder1.uncompressedSize, sizeof(lz4Coder1.uncompressedSize)));
 
             // Отправка данных клиенту кадр 1
-            boost::asio::write(socket, boost::asio::buffer(compressed_data_frame_1));
+            boost::asio::write(socket, boost::asio::buffer(lz4Coder1.compressedData));
             // Отправка данных клиенту кадр 2
-            boost::asio::write(socket, boost::asio::buffer(compressed_data_frame_2));
+            boost::asio::write(socket, boost::asio::buffer(lz4Coder2.compressedData));
 
             t4 = std::chrono::high_resolution_clock::now(); // После передачи
 
@@ -447,10 +432,10 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                       << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
-                      << " acceleration: " << acceleration
-                      << " uncompressed data: " << uncompressed_size * 2
-                      << " compressed data: " << compressed_size_frame_1 + compressed_size_frame_2
-                      << " koef: " << static_cast<double>(uncompressed_size * 2) / static_cast<double>(compressed_size_frame_1 + compressed_size_frame_2)
+                      << " acceleration: " << lz4Coder1.acceleration
+                      << " uncompressed data: " << lz4Coder1.uncompressedSize * 2
+                      << " compressed data: " << lz4Coder1.compressedSize + lz4Coder2.compressedSize
+                      << " koef: " << static_cast<double>(lz4Coder1.uncompressedSize * 2) / static_cast<double>(lz4Coder1.compressedSize + lz4Coder2.compressedSize)
                       << std::endl;
             if (cv::waitKey(1) == 27)
             { // Esc key to stop
@@ -483,8 +468,9 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
     
     // Объявляем фреймы
     cv::Mat frame1, frame2, prevFrame1, prevFrame2, tempFrame1, tempFrame2;
-    std::vector<char> compressed_data_frame_1, compressed_data_frame_2, uncompressed_data_frame_1, uncompressed_data_frame_2;
-    uint16_t acceleration = 1;
+    LZ4Coder lz4Coder1, lz4Coder2;
+
+    LZ4_stream_t* lz4Stream = LZ4_createStream();
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;                                                                                                                                                                                                                                              
@@ -528,10 +514,12 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
         }
         auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-        if (last_duration > 20 && acceleration < 100)
-            acceleration++;
-        else if (last_duration < 15 && acceleration > 1)
-            acceleration--;
+        if (last_duration > 20 && lz4Coder1.acceleration < 100)
+            lz4Coder1.acceleration++;
+        else if (last_duration < 15 && lz4Coder1.acceleration > 1)
+            lz4Coder1.acceleration--;
+        lz4Coder2.acceleration = lz4Coder1.acceleration;
+
         t2 = std::chrono::high_resolution_clock::now(); // Изменение размера и объединение
 
         tempFrame1 = frame1.clone();
@@ -547,14 +535,8 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
         }
         prevFrame2 = tempFrame2.clone();
 
-        // Преобразуем данные в vector<char>
-        convertToCleanDataChar(frame1, uncompressed_data_frame_1);
-        
-        // Преобразуем данные в vector<char>
-        convertToCleanDataChar(frame2, uncompressed_data_frame_2);
-
         // Сожмём данные с zlib-default
-        if ((lz4_compress_fast(uncompressed_data_frame_1, compressed_data_frame_1, acceleration) > 0) && (lz4_compress_fast(uncompressed_data_frame_2, compressed_data_frame_2, acceleration) > 0))
+        if ((lz4Coder1.lz4_compress_fast(frame1) > 0) && (lz4Coder2.lz4_compress_fast(frame2) > 0))
         {
             t3 = std::chrono::high_resolution_clock::now(); // После сжатия
             // Объявим метаданные передаваеммого кадра
@@ -572,28 +554,24 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             boost::asio::write(socket, boost::asio::buffer(&type2, sizeof(type2)));
             
             //Размер сжатых данных первого кадра
-            int compressed_size_frame_1 = compressed_data_frame_1.size();
-            boost::asio::write(socket, boost::asio::buffer(&compressed_size_frame_1, sizeof(compressed_size_frame_1)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder1.compressedSize, sizeof(lz4Coder1.compressedSize)));
 
             //Размер сжатых данных второго кадра
-            int compressed_size_frame_2 = compressed_data_frame_2.size();
-            boost::asio::write(socket, boost::asio::buffer(&compressed_size_frame_2, sizeof(compressed_size_frame_2)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder2.compressedSize, sizeof(lz4Coder2.compressedSize)));
 
             //Мы не можем считать, что исходные данные одинаковые по размеру, поскольку у нас один кадр может быть ключевым, а другой нет
-            int uncompressed_size_1 = uncompressed_data_frame_1.size();
-            boost::asio::write(socket, boost::asio::buffer(&uncompressed_size_1, sizeof(uncompressed_size_1)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder1.uncompressedSize, sizeof(lz4Coder1.uncompressedSize)));
 
-            int uncompressed_size_2 = uncompressed_data_frame_2.size();
-            boost::asio::write(socket, boost::asio::buffer(&uncompressed_size_2, sizeof(uncompressed_size_2)));
+            boost::asio::write(socket, boost::asio::buffer(&lz4Coder2.uncompressedSize, sizeof(lz4Coder2.uncompressedSize)));
 
             // Также надо отправить данные о том у нас кадр ключеввой или нет
             boost::asio::write(socket, boost::asio::buffer(&cam1.currentFrame, sizeof(cam1.currentFrame)));
             boost::asio::write(socket, boost::asio::buffer(&cam2.currentFrame, sizeof(cam2.currentFrame)));
 
             // Отправка данных клиенту кадр 1
-            boost::asio::write(socket, boost::asio::buffer(compressed_data_frame_1));
+            boost::asio::write(socket, boost::asio::buffer(lz4Coder1.compressedData));
             // Отправка данных клиенту кадр 2
-            boost::asio::write(socket, boost::asio::buffer(compressed_data_frame_2));
+            boost::asio::write(socket, boost::asio::buffer(lz4Coder2.compressedData));
 
             t4 = std::chrono::high_resolution_clock::now(); // После передачи
 
@@ -601,10 +579,10 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                       << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
-                      << " acceleration: " << acceleration
-                      << " uncompressed data: " << uncompressed_size_1 + uncompressed_size_2
-                      << " compressed data: " << compressed_size_frame_1 + compressed_size_frame_2
-                      << " koef: " << static_cast<double>(uncompressed_size_1 + uncompressed_size_2) / static_cast<double>(compressed_size_frame_1 + compressed_size_frame_2)
+                      << " acceleration: " << lz4Coder1.acceleration
+                      << " uncompressed data: " << lz4Coder1.uncompressedSize + lz4Coder2.uncompressedSize
+                      << " compressed data: " << lz4Coder2.compressedSize + lz4Coder1.compressedSize
+                      << " koef: " << static_cast<double>(lz4Coder1.uncompressedSize + lz4Coder2.uncompressedSize) / static_cast<double>(lz4Coder2.compressedSize + lz4Coder1.compressedSize)
                       << std::endl;
 
             if (cv::waitKey(1) == 27)

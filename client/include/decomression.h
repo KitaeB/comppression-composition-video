@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <lz4.h>
 
 #include <opencv2/core/mat.hpp>
@@ -21,6 +22,26 @@ cv::Mat convertFromCleanDataBytef(const std::vector<Bytef>& data, int rows, int 
 cv::Mat frameAddiiton(const cv::Mat& new_frame, const cv::Mat& old_frame);
 
 // Распаковка lz4
+class LZ4Decoder {
+    public:
+        LZ4Decoder();
+        ~LZ4Decoder();
+
+        // Параметры входные
+        std::vector<char> compressedData, decompressedData;
+        int decompressedSize, compressedSize, originalSize;
+        // Параметры выходные
+        cv::Mat outputFrame;
+        
+        // Метод сжатия
+        bool lz4_decompress();
+    private:
+        LZ4_streamDecode_t* decoder = LZ4_createStreamDecode();
+        std::vector<char> prevBlock;
+
+        void convertFromCleanDataChar();
+};
+
 bool lz4_decompress(const std::vector<char>& compressed, std::vector<char>& output, int originalSize);
 
 // Распаковка zlib

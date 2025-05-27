@@ -40,29 +40,57 @@ void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data) {
 
 #pragma region lz4
 
-// Сжатие LZ4 (default)
-int lz4_compress_default(const std::vector<char>& input, std::vector<char>& compressed) {
-    int inputSize = input.size();
-    compressed.resize(LZ4_compressBound(inputSize));
+LZ4Coder::~LZ4Coder() {
+    LZ4_freeStream(lz4Stream);
+}
 
-    int compressedSize = LZ4_compress_default(
-        input.data(),
-        compressed.data(),
-        inputSize,
-        compressed.size()
+void LZ4Coder::convertToCleanDataChar() {
+    if (inputFrame.isContinuous()) { 
+        uncompressedData.assign(inputFrame.data, inputFrame.data + inputFrame.total() * inputFrame.elemSize());
+    } else {
+        for (int i = 0; i < inputFrame.rows; ++i) {
+            uncompressedData.insert(uncompressedData.end(), inputFrame.ptr<char>(i), inputFrame.ptr<char>(i) + inputFrame.cols * inputFrame.elemSize());
+        }
+    }
+    uncompressedSize = uncompressedData.size();
+}
+
+int LZ4Coder::lz4_compress_fast(cv::Mat& frame){
+    inputFrame = frame.clone();
+    // Конвертирум данные в vector<char>
+    convertToCleanDataChar();
+    
+    // Изменяем размер вектора сжатых данных
+    compressedData.resize(LZ4_compressBound(uncompressedSize));
+
+    // Сжимаем данные, вычитая сразу же размер
+    compressedSize = LZ4_compress_fast_continue(
+        lz4Stream,
+        uncompressedData.data(),
+        compressedData.data(),
+        uncompressedSize,
+        compressedData.size(),
+        acceleration
     );
-
-    if (compressedSize <= 0) return -1;
-    compressed.resize(compressedSize);
+    // Проверяем успешность сжатия
+    if (compressedSize <= 0) {
+        std::cerr << "LZ4 compression failed!" << std::endl;
+        compressedData.clear();
+        return 0;
+    }
+    // Изменяем размер вектора
+    compressedData.resize(this->compressedSize);
+    // Возвращаем размер сжатых данных
     return compressedSize;
 }
 
 // Сжатие LZ4 (fast)
-int lz4_compress_fast(const std::vector<char>& input, std::vector<char>& compressed, int acceleration) {
+int lz4_compress_fast(LZ4_stream_t* lz4Stream, const std::vector<char>& input, std::vector<char>& compressed, int acceleration) {
     int inputSize = input.size();
     compressed.resize(LZ4_compressBound(inputSize));
 
-    int compressedSize = LZ4_compress_fast(
+    int compressedSize = LZ4_compress_fast_continue(
+        lz4Stream,
         input.data(),
         compressed.data(),
         inputSize,
@@ -74,6 +102,7 @@ int lz4_compress_fast(const std::vector<char>& input, std::vector<char>& compres
     compressed.resize(compressedSize);
     return compressedSize;
 }
+
 
 #pragma endregion
 

@@ -11,8 +11,8 @@ int main() {
   TcpServer server(9090);
 
   // Подключаем камеры
-  CameraState cam1{cv::VideoCapture(0, cv::CAP_DSHOW)};
-  CameraState cam2{cv::VideoCapture(1, cv::CAP_DSHOW)};
+  CameraState cam1{cv::VideoCapture(1, cv::CAP_DSHOW)};
+  CameraState cam2{cv::VideoCapture(2, cv::CAP_DSHOW)};
 
   int choice = 0;
   // std::vector<Bytef> compressed_data;

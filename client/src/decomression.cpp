@@ -66,6 +66,59 @@ cv::Mat convertFromCleanDataBytef(const std::vector<Bytef>& data, int rows, int 
 
 #pragma region lz4
 
+LZ4Decoder::LZ4Decoder() {
+    decoder = LZ4_createStreamDecode();
+}
+
+LZ4Decoder::~LZ4Decoder() {
+    LZ4_freeStreamDecode(decoder);
+}
+
+void LZ4Decoder::convertFromCleanDataChar() {
+    // Проверяем, что размер данных соответствует ожидаемому
+    size_t expected_size = outputFrame.elemSize() * outputFrame.total();
+    if (decompressedData.size() != expected_size) {
+        throw std::invalid_argument("Data size does not match expected Mat size");
+    }
+    
+    // Копируем данные в cv::Mat
+    if (outputFrame.isContinuous()) {
+        std::memcpy(outputFrame.data, decompressedData.data(), decompressedData.size());
+    } else {
+        size_t offset = 0;
+        for (int i = 0; i < outputFrame.rows; ++i) {
+            char* row_ptr = outputFrame.ptr<char>(i);
+            size_t row_size = outputFrame.cols * outputFrame.elemSize();
+            std::memcpy(row_ptr, decompressedData.data() + offset, row_size);
+            offset += row_size;
+        }
+    }
+}
+
+bool LZ4Decoder::lz4_decompress() {
+    // Устанавливаем словарь (если есть предыдущий блок)
+    if (!prevBlock.empty()) {
+        LZ4_setStreamDecode(decoder, prevBlock.data(), prevBlock.size());
+    }
+    decompressedData.resize(originalSize);
+
+    decompressedSize = LZ4_decompress_safe_continue(
+        decoder,
+        compressedData.data(),
+        decompressedData.data(),
+        compressedData.size(),
+        originalSize
+    );
+    if (decompressedSize <= 0 )
+        std::cerr << "Ошибка декомпрессии!" << std::endl;
+    // Обновляем словарь: сохраняем последние 64 KB данных
+    prevBlock.assign(decompressedData.data() + decompressedSize - std::min(decompressedSize, 512 * 1024),
+                     decompressedData.data() + decompressedSize);
+
+    convertFromCleanDataChar();
+    return decompressedSize > 0;
+}
+
 // Распаковка lz4
 bool lz4_decompress(const std::vector<char>& compressed, std::vector<char>& output, int originalSize) {
     output.resize(originalSize);

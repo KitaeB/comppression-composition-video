@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(WIN32)
     # Устанавливаем путь к vcpkg toolchain, если не задан явно
     if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-        set(CMAKE_TOOLCHAIN_FILE "E:/Program/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+        set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
     endif()
 endif()
 

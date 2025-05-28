@@ -1,5 +1,6 @@
 #include <aom/aom_codec.h>
 #include <cstdint>
+#include <iostream>
 #include <opencv2/opencv.hpp>
 #include <vector>
 
@@ -40,6 +41,10 @@ void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data) {
 
 #pragma region lz4
 
+LZ4Coder::LZ4Coder() {
+    lz4Stream = LZ4_createStream();
+    dictBuffer.resize(DICT_SIZE);
+}
 LZ4Coder::~LZ4Coder() {
     LZ4_freeStream(lz4Stream);
 }
@@ -56,22 +61,26 @@ void LZ4Coder::convertToCleanDataChar() {
 }
 
 int LZ4Coder::lz4_compress_fast(cv::Mat& frame){
+
     inputFrame = frame.clone();
-    // Конвертирум данные в vector<char>
-    convertToCleanDataChar();
-    
+    uncompressedSize = inputFrame.elemSize() * inputFrame.total();
+
     // Изменяем размер вектора сжатых данных
     compressedData.resize(LZ4_compressBound(uncompressedSize));
 
-    // Сжимаем данные, вычитая сразу же размер
+    if(!dictBuffer.empty())
+        LZ4_loadDict(lz4Stream, dictBuffer.data(), dictBuffer.size());
     compressedSize = LZ4_compress_fast_continue(
         lz4Stream,
-        uncompressedData.data(),
+        (const char*)inputFrame.data,
         compressedData.data(),
         uncompressedSize,
         compressedData.size(),
         acceleration
     );
+    // Сохраняем словарь
+    LZ4_saveDict(lz4Stream, dictBuffer.data(), dictBuffer.size());
+
     // Проверяем успешность сжатия
     if (compressedSize <= 0) {
         std::cerr << "LZ4 compression failed!" << std::endl;

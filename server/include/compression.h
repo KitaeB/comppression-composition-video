@@ -19,6 +19,7 @@ void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data);
 // Объявляем класс для сжатия библиотекой LZ4
 class LZ4Coder {
     public:
+        LZ4Coder();
         ~LZ4Coder();
         // Параметры входные
         cv::Mat inputFrame;
@@ -31,8 +32,10 @@ class LZ4Coder {
         int lz4_compress_fast(cv::Mat& frame);
 
     private:
-        LZ4_stream_t* lz4Stream = LZ4_createStream();
-        std::vector<char> uncompressedData;
+        LZ4_stream_t* lz4Stream =  nullptr;
+        const int DICT_SIZE = 64 * 1024;
+        std::vector<char> uncompressedData, dictBuffer;
+
         void convertToCleanDataChar();
 };
 

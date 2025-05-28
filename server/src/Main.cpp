@@ -10,6 +10,7 @@ int main() {
   // Создаём сервер
   TcpServer server(9090);
 
+  while (true) {
   // Подключаем камеры
   CameraState cam1{cv::VideoCapture(1, cv::CAP_DSHOW)};
   CameraState cam2{cv::VideoCapture(2, cv::CAP_DSHOW)};
@@ -18,7 +19,6 @@ int main() {
   // std::vector<Bytef> compressed_data;
   // Цикл для реалиализации переподключения для сервера, в случае ошибки
 
-  while (true) {
     try {
       // Инициализируем новое подключение
       server.NewConnect();

@@ -91,8 +91,8 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
     std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
     
     // Объявляем фреймы
-    cv::Mat frame1, frame2, frame, prevFrame;
-    LZ4Coder lz4Coder;
+    cv::Mat frame1, frame2, frame;
+    LZ4Coder lz4Coder = LZ4Coder();
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
@@ -132,7 +132,6 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
-
         // После получения
         t1 = std::chrono::high_resolution_clock::now();
 
@@ -171,7 +170,6 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             boost::asio::write(socket, boost::asio::buffer(lz4Coder.compressedData));
 
             t4 = std::chrono::high_resolution_clock::now(); // После передачи
-            prevFrame = frame.clone();
 
             std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                       << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
@@ -215,7 +213,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
     // Объявляем фреймы
     cv::Mat frame1, frame2, frame, prevFrame, tempFrame;
     uint16_t currentFrame;
-    LZ4Coder lz4Coder;
+    LZ4Coder lz4Coder = LZ4Coder();
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
@@ -346,7 +344,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
     
     // Объявляем фреймы
     cv::Mat frame1, frame2, frame, prevFrame;
-    LZ4Coder lz4Coder1, lz4Coder2;
+    LZ4Coder lz4Coder1 = LZ4Coder(), lz4Coder2 = LZ4Coder();
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;

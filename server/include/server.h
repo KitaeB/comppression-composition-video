@@ -35,6 +35,8 @@ struct CameraState {
     std::atomic<bool> frameReady{false};
     std::mutex frameMutex;
     std::atomic<bool> running{true};
+    std::atomic<bool> useCam{true};
+    std::string filePath;
     int currentFrame;
 };
 

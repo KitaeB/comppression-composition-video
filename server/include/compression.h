@@ -39,6 +39,20 @@ class LZ4Coder {
         void convertToCleanDataChar();
 };
 
+
+class ZLIBCoder {
+    public:
+    ZLIBCoder();
+    ~ZLIBCoder();
+    // Входные параметры
+    cv::Mat inputFrame;
+    
+    // Выходные параметры
+
+    private:
+
+};
+
 //Методы сждатия zlib
 int zlib_compress_default(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 int zlib_compress_fast(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);

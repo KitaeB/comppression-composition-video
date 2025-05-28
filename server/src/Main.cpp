@@ -1,6 +1,7 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <opencv2/videoio.hpp>
 
 #include "server.h"
 
@@ -11,9 +12,13 @@ int main() {
   TcpServer server(9090);
 
   while (true) {
+  // Подключаем видео
+  CameraState cam1{cv::VideoCapture("video/file_1.mp4")};
+  CameraState cam2{cv::VideoCapture("video/file_2.mp4")};
+
   // Подключаем камеры
-  CameraState cam1{cv::VideoCapture(1, cv::CAP_DSHOW)};
-  CameraState cam2{cv::VideoCapture(2, cv::CAP_DSHOW)};
+  //CameraState cam1{cv::VideoCapture(1, cv::CAP_DSHOW)};
+  //CameraState cam2{cv::VideoCapture(2, cv::CAP_DSHOW)};
 
   int choice = 0;
   // std::vector<Bytef> compressed_data;
@@ -82,7 +87,7 @@ int main() {
           break;
 
         case 2:
-          lz4_concat_prime(socket, cam1, cam2); // хз, не работает
+          lz4_concat_prime(socket, cam1, cam2);
           break;
 
         case 3:
@@ -130,7 +135,7 @@ int main() {
 
         case 16:
           break;
-
+          
         default:
           std::cout << "Error enter number between 1...16" << std::endl;
         }

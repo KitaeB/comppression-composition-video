@@ -1,0 +1,11 @@
+---
+Language:        Cpp
+BasedOnStyle:  Google
+
+AccessModifierOffset: -4
+IncludeBlocks: Preserve
+SortIncludes: Never
+IndentPPDirectives: AfterHash
+IndentWidth:  4
+InsertNewlineAtEOF: On
+ColumnLimit: 120 

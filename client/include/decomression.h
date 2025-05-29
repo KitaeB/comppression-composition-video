@@ -30,10 +30,11 @@ class LZ4Decoder {
         // Параметры входные
         std::vector<char> compressedData, decompressedData;
         int decompressedSize, compressedSize, originalSize;
+
         // Параметры выходные
         cv::Mat outputFrame;
         
-        // Метод сжатия
+        // Метод декомпрессии
         bool lz4_decompress();
     private:
         LZ4_streamDecode_t* decoder = LZ4_createStreamDecode();
@@ -44,6 +45,28 @@ class LZ4Decoder {
 
 bool lz4_decompress(const std::vector<char>& compressed, std::vector<char>& output, int originalSize);
 
+
+class ZLIBDecoder {
+    public:
+        ZLIBDecoder();
+        ~ZLIBDecoder();
+
+        // Параметры входные
+        std::vector<Bytef> compressedData, decompressedData;
+        int decompressedSize, compressedSize, originalSize;
+
+        // Параметры выходные
+        cv::Mat outputFrame;
+        
+        // Метод декомпрессии
+        bool zlib_decompress_stream();
+
+        private:
+            z_stream zStream;
+            std::vector<Bytef> zBuffer;
+
+            void convertFromCleanDataBytef();
+};
 // Распаковка zlib
 int zlib_decompress(const std::vector<Bytef>& compressed, std::vector<Bytef>& output, int originalSize);
 

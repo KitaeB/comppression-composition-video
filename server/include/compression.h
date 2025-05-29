@@ -3,6 +3,7 @@
 #include <lz4.h>
 
 #include <opencv2/core/mat.hpp>
+#include <zconf.h>
 #include <zlib.h>
 
 #include <aom/aom_codec.h>
@@ -19,6 +20,7 @@ void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data);
 // Объявляем класс для сжатия библиотекой LZ4
 class LZ4Coder {
     public:
+        // Конструктор и деструктор
         LZ4Coder();
         ~LZ4Coder();
         // Параметры входные
@@ -38,6 +40,35 @@ class LZ4Coder {
 
         void convertToCleanDataChar();
 };
+
+
+class ZLIBCoder {
+    public:
+        // Конструктор и деструктор
+        ZLIBCoder();
+        ~ZLIBCoder();
+
+        // Входные параметры
+        cv::Mat inputFrame;
+        
+        // Выходные параметры
+        std::vector<Bytef> compressedData, uncompressedData;
+        int originalSize, compressedSize;
+
+        // Методы сжатия
+        int zlib_compress_stream(cv::Mat& frame);
+
+        //int zlib_compress_default(cv::Mat& frame);
+        //int zlib_compress_fast(cv::Mat& frame);
+        //int zlib_compress_high(cv::Mat& frame);
+
+    private:
+        // Поток данных
+        z_stream zStream;
+
+        // Выходной буффер
+        std::vector<Bytef> zBuffer;
+    };
 
 //Методы сждатия zlib
 int zlib_compress_default(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);

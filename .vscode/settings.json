@@ -94,5 +94,12 @@
         "unordered_set": "cpp",
         "valarray": "cpp"
     },
-    "cmake.sourceDirectory": "C:/Users/Kitae/source/repos/KitaeB/comppression-composition-video/server"
+    "cmake.sourceDirectory": "R:/Projects/3_Личные проекты/2_C/comppression-composition-video/server",
+    "clang-format.fallbackStyle": "Google",
+    "clang-format.language.cpp.enable": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+    "clangd.trace": ".clang-format",
+    "clang-format.assumeFilename": ".clang-format",
+    "clang-format.executable": ".clang-format"
 }

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(client-ccv)
+project(server-ccv)
 
 # Устанавливаем стандарт C++
 set(CMAKE_CXX_STANDARD 17)
@@ -18,11 +18,11 @@ endif()
 file(GLOB SOURCES "src/*.cpp")
 
 # Создаём исполняемый файл
-add_executable(client-ccv ${SOURCES})
+add_executable(server-ccv ${SOURCES})
 
 # Установка версии Windows API для Boost.Asio (например, Windows 10 — 0x0A00)
 if(WIN32)
-    target_compile_definitions(client-ccv PRIVATE _WIN32_WINNT=0x0A00)
+    target_compile_definitions(server-ccv PRIVATE _WIN32_WINNT=0x0A00)
 endif()
 
 # Поиск библиотек через vcpkg
@@ -31,23 +31,25 @@ find_package(Boost REQUIRED COMPONENTS system)
 find_package(lz4 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(aom REQUIRED)
+find_package(zstd CONFIG REQUIRED)
 
 # Подключение зависимостей
-target_link_libraries(client-ccv PRIVATE
+target_link_libraries(server-ccv PRIVATE
     ${OpenCV_LIBS}
     Boost::system
     lz4::lz4
     ZLIB::ZLIB
     unofficial::aom
+    zstd::libzstd
 )
 
 # Только для Windows — линковка с winsock
 if(WIN32)
-    target_link_libraries(client-ccv PRIVATE ws2_32)
+    target_link_libraries(server-ccv PRIVATE ws2_32)
 endif()
 
 # Подключаем директории с заголовочными файлами
-target_include_directories(client-ccv PRIVATE
+target_include_directories(server-ccv PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
 )

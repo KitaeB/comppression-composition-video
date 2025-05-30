@@ -101,5 +101,5 @@
     "editor.formatOnType": false,
     "clangd.trace": ".clang-format",
     "clang-format.assumeFilename": ".clang-format",
-    "clang-format.executable": ".clang-format"
+    "clang-format.executable": "clang-format"
 }

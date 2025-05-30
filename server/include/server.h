@@ -35,9 +35,11 @@ struct CameraState {
     std::atomic<bool> frameReady{false};
     std::mutex frameMutex;
     std::atomic<bool> running{true};
-    std::atomic<bool> useCam{true};
-    std::string filePath;
+    
+    std::string file;
     int currentFrame;
+
+    CameraState(const std::string& filename) : file(filename), cap(filename) {};
 };
 
 #pragma endregion

@@ -13,12 +13,12 @@ int main() {
 
   while (true) {
   // Подключаем видео
-  //CameraState cam1{cv::VideoCapture("video/file_1.mp4")};
-  //CameraState cam2{cv::VideoCapture("video/file_2.mp4")};
+  CameraState cam1 {"video/file_1.mp4"};
+  CameraState cam2 {"video/file_1.mp4"};
 
   // Подключаем камеры
-  CameraState cam1{cv::VideoCapture(0, cv::CAP_DSHOW)};
-  CameraState cam2{cv::VideoCapture(1, cv::CAP_DSHOW)};
+  //CameraState cam1{cv::VideoCapture(0, cv::CAP_DSHOW)};
+  //CameraState cam2{cv::VideoCapture(1, cv::CAP_DSHOW)};
 
   int choice = 0;
   // std::vector<Bytef> compressed_data;

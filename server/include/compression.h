@@ -4,11 +4,6 @@
 
 #include <lz4.h>
 
-<<<<<<< HEAD
-#include <opencv2/core/mat.hpp>
-#include <zconf.h>
-=======
->>>>>>> 1584364e37163758f38092b71ad308170fe9d5d0
 #include <zlib.h>
 
 #include <zstd.h>
@@ -24,20 +19,12 @@ void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data);
 /* ============================================================================================================ */
 // Объявляем класс для сжатия библиотекой LZ4
 class LZ4Coder {
-<<<<<<< HEAD
     public:
         // Конструктор и деструктор
         LZ4Coder();
         ~LZ4Coder();
         // Параметры входные
         cv::Mat inputFrame;
-=======
-public:
-    LZ4Coder();
-    ~LZ4Coder();
-    // Параметры входные
-    cv::Mat inputFrame;
->>>>>>> 1584364e37163758f38092b71ad308170fe9d5d0
 
     // Параметры выходные
     std::vector<char> compressedData;
@@ -54,7 +41,6 @@ private:
     void convertToCleanDataChar();
 };
 
-<<<<<<< HEAD
 
 class ZLIBCoder {
     public:
@@ -85,23 +71,6 @@ class ZLIBCoder {
     };
 
 //Методы сждатия zlib
-=======
-/* ============================================================================================================ */
-// Объявляем класс для сжатия библиотекой ZLIB
-class ZLIBCoder {
-public:
-    ZLIBCoder();
-    ~ZLIBCoder();
-    // Входные параметры
-    cv::Mat inputFrame;
-
-    // Выходные параметры
-
-private:
-};
-
-// Методы сждатия zlib
->>>>>>> 1584364e37163758f38092b71ad308170fe9d5d0
 int zlib_compress_default(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 int zlib_compress_fast(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 int zlib_compress_high(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);

@@ -112,7 +112,6 @@ int main() {
           break;
 
         case 9:
-          aom_concat_noprime(socket, cam1, cam2);
           break;
 
         case 10:

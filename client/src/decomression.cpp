@@ -1,8 +1,13 @@
 #include <decomression.h>
 #include <zlib.h>
+#include <cstring>
+#include <iostream>
 #include <opencv2/core/mat.hpp>
+#include <ostream>
 
 #pragma region common
+
+void point(int num) { std::cout << "point " << num << std::endl; }
 
 cv::Mat frameAddiiton(const cv::Mat& diff, const cv::Mat& old_frame) {
     cv::Mat frame;
@@ -128,56 +133,61 @@ ZLIBDecoder::ZLIBDecoder() {
     zStream.opaque = Z_NULL;
 
     inflateInit(&zStream);
-    zBuffer.resize(16384);
+    zBuffer.resize(32768);
 }
 
 ZLIBDecoder::~ZLIBDecoder() { inflateEnd(&zStream); }
 
 void ZLIBDecoder::convertFromCleanDataBytef() {
+    if (decompressedSize == outputFrame.total() * outputFrame.elemSize())
+        std::memcpy(outputFrame.data, decompressedData.data(), decompressedSize);    else
+     std::cerr << "uncorrect decompress data" << std::endl;
 
-    // Проверяем, что размер данных соответствует ожидаемому
-    size_t expected_size = outputFrame.total() * outputFrame.elemSize();
-    if (decompressedData.size() != expected_size) {
-        throw std::invalid_argument("Data size does not match expected Mat size");
-    }
-
-    // Копируем данные в cv::Mat
-    if (outputFrame.isContinuous()) {
-        std::memcpy(outputFrame.data, decompressedData.data(), decompressedData.size());
-    } else {
-        size_t offset = 0;
-        for (int i = 0; i < outputFrame.rows; ++i) {
-            Bytef* row_ptr = outputFrame.ptr<Bytef>(i);
-            size_t row_size = outputFrame.cols * outputFrame.elemSize();
-            std::memcpy(row_ptr, decompressedData.data() + offset, row_size);
-            offset += row_size;
-        }
-    }
 }
 
 
 bool ZLIBDecoder::zlib_decompress_stream() {
     zStream.avail_in = compressedSize;
     zStream.next_in = compressedData.data();
-
+    int ret;
     decompressedData.clear();
-
+inflateReset(&zStream);
     do {
         zStream.avail_out = zBuffer.size();
         zStream.next_out = zBuffer.data();
 
-        int ret = inflate(&zStream, Z_NO_FLUSH);  // Поддержка зависимости от предыдущих кадров
-        if (ret != Z_OK && ret != Z_STREAM_END) {
+        ret = inflate(&zStream, Z_FINISH);  // Поддержка зависимости от предыдущих кадров
+        if (ret != Z_OK) {
+            std::cerr << "Inflate error: " << ret << std::endl;
             return false;
         }
-
         decompressedSize = zBuffer.size() - zStream.avail_out;
         decompressedData.insert(decompressedData.end(), zBuffer.data(), zBuffer.data() + decompressedSize);
-    } while (zStream.avail_out == 0);
-    
-    convertFromCleanDataBytef();
+
+    } while (ret == Z_STREAM_END);
+    decompressedSize = decompressedData.size();
+
+    if (decompressedSize == outputFrame.total() * outputFrame.elemSize())
+        std::memcpy(outputFrame.data, decompressedData.data(), decompressedSize);
+    else
+     std::cerr << "uncorrect decompress data" << std::endl;
 
     return !decompressedData.empty();
+}
+
+bool ZLIBDecoder::zlib_decompress() {
+    decompressedData.resize(originalSize);
+    uLongf decompressed_size = originalSize;
+
+    int result = uncompress(decompressedData.data(), &decompressed_size, compressedData.data(), compressedData.size());
+    if (result != Z_OK) {
+        return false;  // Ошибка распаковки
+    }
+
+    if (outputFrame.total() * outputFrame.elemSize() == decompressedData.size())
+        std::memcpy(outputFrame.data, decompressedData.data(), decompressedData.size());
+
+    return outputFrame.total() * outputFrame.elemSize() == decompressedData.size();  // Успешная распаковка
 }
 
 int zlib_decompress(const std::vector<Bytef>& compressed_data, std::vector<Bytef>& output_data, int original_size) {
@@ -190,68 +200,6 @@ int zlib_decompress(const std::vector<Bytef>& compressed_data, std::vector<Bytef
     }
 
     return 0;  // Успешная распаковка
-}
-
-#pragma endregion
-
-#pragma region aom
-
-bool aom_decompress(const std::vector<uint8_t>& encoded_data, cv::Mat& frame) {
-    if (encoded_data.empty()) {
-        std::cerr << "Encoded data is empty\n";
-        return false;
-    }
-
-    aom_codec_ctx_t decoder = {};
-    if (aom_codec_dec_init(&decoder, aom_codec_av1_dx(), nullptr, 0)) {
-        std::cerr << "aom_codec_dec_init failed\n";
-        return false;
-    }
-
-    if (aom_codec_decode(&decoder, encoded_data.data(), encoded_data.size(), nullptr)) {
-        std::cerr << "aom_codec_decode failed\n";
-        aom_codec_destroy(&decoder);
-        return false;
-    }
-
-    aom_codec_iter_t iter = nullptr;
-    aom_image_t* img = aom_codec_get_frame(&decoder, &iter);
-    if (!img) {
-        std::cerr << "No frame was decoded\n";
-        aom_codec_destroy(&decoder);
-        return false;
-    }
-
-    // Проверим формат изображения
-    if (img->fmt != AOM_IMG_FMT_I420) {
-        std::cerr << "Unsupported image format: " << img->fmt << "\n";
-        aom_codec_destroy(&decoder);
-        return false;
-    }
-
-    int width = img->d_w;
-    int height = img->d_h;
-
-    // Создаем Y, U, V
-    cv::Mat y(height, width, CV_8UC1, img->planes[0], img->stride[0]);
-    cv::Mat u(height / 2, width / 2, CV_8UC1, img->planes[1], img->stride[1]);
-    cv::Mat v(height / 2, width / 2, CV_8UC1, img->planes[2], img->stride[2]);
-
-    // Масштабируем UV до размера Y
-    cv::Mat u_resized, v_resized;
-    cv::resize(u, u_resized, y.size(), 0, 0, cv::INTER_LINEAR);
-    cv::resize(v, v_resized, y.size(), 0, 0, cv::INTER_LINEAR);
-
-    // Объединяем каналы и преобразуем в BGR
-    std::vector<cv::Mat> channels = {y, u_resized, v_resized};
-    cv::Mat yuv, bgr;
-    cv::merge(channels, yuv);
-    cv::cvtColor(yuv, bgr, cv::COLOR_YUV2BGR);
-
-    frame = bgr.clone();
-
-    aom_codec_destroy(&decoder);
-    return true;
 }
 
 #pragma endregion

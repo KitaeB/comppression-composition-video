@@ -63,7 +63,6 @@ int main() {
         break;
 
       case 9:
-        aom_concat_noprime(socket);
         break;
 
       case 10:

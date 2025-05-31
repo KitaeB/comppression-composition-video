@@ -3,7 +3,6 @@
 #include "decomression.h"
 
 #include <opencv2/core/mat.hpp>
-#include <thread>
 #include <chrono>
 
 #pragma region lz4
@@ -283,9 +282,10 @@ void zlib_concat_noprime(tcp::socket &socket) {
     ZLIBDecoder zDecoder = ZLIBDecoder();
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    std::cout << "point 5 " << std::endl;
+    point(5);
     try {
         while (true) {
+
             t0 = std::chrono::high_resolution_clock::now();  // До получения данных
             // Читаем метаданные
             boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
@@ -298,13 +298,16 @@ void zlib_concat_noprime(tcp::socket &socket) {
 
             // Читаем данные кадра
             zDecoder.compressedData.resize(zDecoder.compressedSize);
+
             boost::asio::read(socket, boost::asio::buffer(zDecoder.compressedData));
 
             t1 = std::chrono::high_resolution_clock::now();  // После получения данных
 
             zDecoder.outputFrame = cv::Mat(rows, cols, type);
-            if (zDecoder.zlib_decompress_stream()) {
+
+            if (zDecoder.zlib_decompress()) {
                 cv::imshow("webcam", zDecoder.outputFrame);
+
             }
             t2 = std::chrono::high_resolution_clock::now();  // После сжатия
 
@@ -400,60 +403,4 @@ void zlib_noconcat_noprime(tcp::socket &socket) {
         cv::destroyAllWindows();
     }
 }
-#pragma endregion
-
-#pragma region aom
-
-void aom_concat_noprime(tcp::socket &socket) {
-    int rows, cols, type;
-    cv::Mat frame;
-    std::vector<uint8_t> compressed_data, uncompressed_data;
-    // Объявим временные метки
-    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    std::cout << "point 9 " << std::endl;
-
-    try {
-        while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения данных
-            // Читаем метаданные
-            boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
-            boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
-            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
-
-            int compressed_size;
-            boost::asio::read(socket, boost::asio::buffer(&compressed_size, sizeof(compressed_size)));
-
-            // Читаем данные кадра
-            compressed_data.resize(compressed_size);
-            boost::asio::read(socket, boost::asio::buffer(compressed_data));
-
-            t1 = std::chrono::high_resolution_clock::now();  // После получения данных
-
-            frame = cv::Mat(rows, cols, type);
-            if (!aom_decompress(compressed_data, frame)) {
-                std::cout << "decompress error!!";
-                continue;
-            }
-            t2 = std::chrono::high_resolution_clock::now();  // После сжатия
-            cv::imshow("webcam", frame);
-
-            t3 = std::chrono::high_resolution_clock::now();  // После отображения
-
-            std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
-                      << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
-                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
-                      << " compressed data: " << compressed_size << std::endl;
-            // Обязательно waitKey
-            if (cv::waitKey(1) == 27) {  // Нажал ESC
-                cv::destroyAllWindows();
-                break;
-            }
-        }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
-        cv::destroyAllWindows();
-    }
-}
-
 #pragma endregion

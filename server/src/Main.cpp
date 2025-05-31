@@ -7,23 +7,21 @@
 
 using boost::asio::ip::tcp;
 
-int main() {
+int main(int argc, char* argv[]) {
   // Создаём сервер
   TcpServer server(9090);
 
   while (true) {
   // Подключаем видео
-  CameraState cam1 {"video/file_1.mp4"};
-  CameraState cam2 {"video/file_1.mp4"};
+  //CameraState cam1 {"video/file_1.mp4"};
+  //CameraState cam2 {"video/file_1.mp4"};
 
-  // Подключаем камеры
-  //CameraState cam1{cv::VideoCapture(0, cv::CAP_DSHOW)};
-  //CameraState cam2{cv::VideoCapture(1, cv::CAP_DSHOW)};
+  // Подключаем камеры0
+  CameraState cam1{0, cv::CAP_DSHOW};
+  CameraState cam2{1, cv::CAP_DSHOW};
 
   int choice = 0;
-  // std::vector<Bytef> compressed_data;
   // Цикл для реалиализации переподключения для сервера, в случае ошибки
-
     try {
       // Инициализируем новое подключение
       server.NewConnect();
@@ -74,7 +72,7 @@ int main() {
           std::cin.clear(); // Сбрасываем флаг ошибки
           std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
                           '\n'); // Очищаем буфер
-          std::cout << "Error enter number between 1...4" << std::endl;
+          std::cout << "Error enter number between 1...16" << std::endl;
           continue;
         }
 

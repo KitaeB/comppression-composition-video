@@ -15,7 +15,7 @@
 // Общие методы для работы с изорбражениями
 cv::Mat frameSubstraction(const cv::Mat& frame, const cv::Mat& old_frame);
 void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data);
-
+void point(int num);
 /* ============================================================================================================ */
 // Объявляем класс для сжатия библиотекой LZ4
 class LZ4Coder {
@@ -53,13 +53,13 @@ class ZLIBCoder {
         
         // Выходные параметры
         std::vector<Bytef> compressedData, uncompressedData;
-        int originalSize, compressedSize;
-
+        int originalSize;
+        uLongf compressedSize;
         // Методы сжатия
         int zlib_compress_stream(cv::Mat& frame);
 
         //int zlib_compress_default(cv::Mat& frame);
-        //int zlib_compress_fast(cv::Mat& frame);
+        int zlib_compress_fast(cv::Mat& frame);
         //int zlib_compress_high(cv::Mat& frame);
 
     private:

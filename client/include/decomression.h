@@ -21,6 +21,7 @@ cv::Mat convertFromCleanDataBytef(const std::vector<Bytef>& data, int rows, int 
 //Сложение кадров
 cv::Mat frameAddiiton(const cv::Mat& new_frame, const cv::Mat& old_frame);
 
+void point(int num) ;
 // Распаковка lz4
 class LZ4Decoder {
     public:
@@ -61,6 +62,7 @@ class ZLIBDecoder {
         // Метод декомпрессии
         bool zlib_decompress_stream();
 
+        bool zlib_decompress();
         private:
             z_stream zStream;
             std::vector<Bytef> zBuffer;
@@ -69,6 +71,3 @@ class ZLIBDecoder {
 };
 // Распаковка zlib
 int zlib_decompress(const std::vector<Bytef>& compressed, std::vector<Bytef>& output, int originalSize);
-
-// Распаковка aom
-bool aom_decompress(const std::vector<uint8_t>& encoded_data, cv::Mat& frame);

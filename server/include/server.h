@@ -1,9 +1,11 @@
 #pragma once 
 
+#include <opencv2/core/hal/interface.h>
 #include <boost/asio.hpp>
 #include <opencv2/opencv.hpp>
 #include <atomic>
 #include <mutex>
+#include <opencv2/videoio.hpp>
 
 #define VIDEO_WEIGHT 1920
 #define VIDEO_HEIGHT 1080
@@ -40,6 +42,7 @@ struct CameraState {
     int currentFrame;
 
     CameraState(const std::string& filename) : file(filename), cap(filename) {};
+    CameraState(uint index, uint apiPreference) {cap.open(index, apiPreference);};
 };
 
 #pragma endregion

@@ -132,47 +132,61 @@ ZLIBDecoder::ZLIBDecoder() {
     zStream.zfree = Z_NULL;
     zStream.opaque = Z_NULL;
 
-    inflateInit(&zStream);
-    zBuffer.resize(32768);
+    if (inflateInit(&zStream) != Z_OK) std::cerr << "Error init zStream" << std::endl;
+
+    zBuffer.resize(256 * 1024);
 }
 
 ZLIBDecoder::~ZLIBDecoder() { inflateEnd(&zStream); }
 
 void ZLIBDecoder::convertFromCleanDataBytef() {
     if (decompressedSize == outputFrame.total() * outputFrame.elemSize())
-        std::memcpy(outputFrame.data, decompressedData.data(), decompressedSize);    else
-     std::cerr << "uncorrect decompress data" << std::endl;
-
+        std::memcpy(outputFrame.data, decompressedData.data(), decompressedSize);
+    else
+        std::cerr << "uncorrect decompress data" << std::endl;
 }
-
 
 bool ZLIBDecoder::zlib_decompress_stream() {
     zStream.avail_in = compressedSize;
     zStream.next_in = compressedData.data();
     int ret;
     decompressedData.clear();
-inflateReset(&zStream);
+
+    // Сброс потока для новой декомпрессии
+    if (inflateReset(&zStream) != Z_OK) {
+        std::cerr << "Error reset inflate" << std::endl;
+        return false;
+    }
+
+    zStream.avail_in = compressedSize;
+    zStream.next_in = compressedData.data();
     do {
         zStream.avail_out = zBuffer.size();
         zStream.next_out = zBuffer.data();
 
-        ret = inflate(&zStream, Z_FINISH);  // Поддержка зависимости от предыдущих кадров
-        if (ret != Z_OK) {
-            std::cerr << "Inflate error: " << ret << std::endl;
+        ret = inflate(&zStream, Z_NO_FLUSH);
+
+        if (ret != Z_OK && ret != Z_STREAM_END) {
+            std::cerr << "Error inflate: " << ret << std::endl;
             return false;
         }
-        decompressedSize = zBuffer.size() - zStream.avail_out;
-        decompressedData.insert(decompressedData.end(), zBuffer.data(), zBuffer.data() + decompressedSize);
 
-    } while (ret == Z_STREAM_END);
+        size_t bytesDecompressed = zBuffer.size() - zStream.avail_out;
+        decompressedData.insert(decompressedData.end(), zBuffer.data(), zBuffer.data() + bytesDecompressed);
+
+    } while (ret != Z_STREAM_END);
+
     decompressedSize = decompressedData.size();
 
-    if (decompressedSize == outputFrame.total() * outputFrame.elemSize())
+    // Проверка и копирование данных в outputFrame
+    size_t originalSize = outputFrame.total() * outputFrame.elemSize();
+    if (decompressedSize == originalSize) {
         std::memcpy(outputFrame.data, decompressedData.data(), decompressedSize);
-    else
-     std::cerr << "uncorrect decompress data" << std::endl;
-
-    return !decompressedData.empty();
+        return true;
+    } else {
+        std::cerr << "Uncorrect decompressed size. original" << originalSize << ", decompress " << decompressedSize << std::endl;
+        return false;
+    }
 }
 
 bool ZLIBDecoder::zlib_decompress() {
@@ -200,6 +214,57 @@ int zlib_decompress(const std::vector<Bytef>& compressed_data, std::vector<Bytef
     }
 
     return 0;  // Успешная распаковка
+}
+
+#pragma endregion
+
+#pragma region zstd
+
+ZSTDDecoder::ZSTDDecoder() {
+    // Создание контекста декомпрессии
+    ZSTD_DCtx* dctx = ZSTD_createDCtx();
+    if (!dctx) {
+        throw std::runtime_error("Не удалось создать ZSTD_DCtx.");
+    }
+}
+ZSTDDecoder::~ZSTDDecoder() {
+    ZSTD_freeDCtx(dctx);
+}
+
+bool ZSTDDecoder::zstd_decompress_stream() {
+    // Проверка входных данных
+    if (compressedData.empty()) {
+        throw std::runtime_error("Нет сжатых данных для декомпрессии.");
+    }
+    // Вычисление ожидаемого размера данных    
+    decompressedData.clear();
+    decompressedData.reserve(originalSize);
+
+    // Буферы
+    size_t const buff_in_size = ZSTD_DStreamInSize();
+    size_t const buff_out_size = ZSTD_DStreamOutSize();
+    std::vector<char> buff_in(buff_in_size);
+    std::vector<char> buff_out(buff_out_size);
+
+    // Подготовка входного буфера
+    ZSTD_inBuffer in_buf = { compressedData.data(), compressedData.size(), 0 };
+
+    while (in_buf.pos < in_buf.size) {
+        ZSTD_outBuffer out_buf = { buff_out.data(), buff_out_size, 0 };
+
+        size_t ret = ZSTD_decompressStream(dctx, &out_buf, &in_buf);
+        if (ZSTD_isError(ret)) {
+            throw std::runtime_error(ZSTD_getErrorName(ret));
+        }
+
+        decompressedData.insert(decompressedData.end(), buff_out.data(), buff_out.data() + out_buf.pos);
+    }
+
+    // Проверка длины
+    if (outputFrame.total() * outputFrame.elemSize() == decompressedData.size())
+        std::memcpy(outputFrame.data, decompressedData.data(), decompressedData.size());
+    decompressedSize = decompressedData.size();
+    return outputFrame.total() * outputFrame.elemSize() == decompressedData.size();  // Успешная распаковка
 }
 
 #pragma endregion

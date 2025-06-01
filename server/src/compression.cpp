@@ -14,9 +14,9 @@
 
 void point(int num) { std::cout << "point " << num << std::endl; }
 
-cv::Mat frameSubstraction(const cv::Mat& frame, const cv::Mat& old_frame) {
+cv::Mat frameSubstraction(const cv::Mat& new_frame, const cv::Mat& old_frame) {
     cv::Mat delta;
-    cv::subtract(frame, old_frame, delta, cv::noArray(), CV_16SC3);  // Сначала вычисляем в CV_16SC3
+    cv::subtract(new_frame, old_frame, delta, cv::noArray(), CV_16SC3);  // Сначала вычисляем в CV_16SC3
 
     return delta;
 }
@@ -73,8 +73,8 @@ int LZ4Coder::lz4_compress_fast(cv::Mat& frame) {
 
     if (!dictBuffer.empty()) LZ4_loadDict(lz4Stream, dictBuffer.data(), dictBuffer.size());
 
-    compressedSize = LZ4_compress_fast_continue(lz4Stream, (const char*)inputFrame.data, compressedData.data(),
-                                                uncompressedSize, compressedData.size(), acceleration);
+    compressedSize = LZ4_compress_fast_continue(lz4Stream, (const char*)inputFrame.data, compressedData.data(), uncompressedSize,
+                                                compressedData.size(), acceleration);
     // Сохраняем словарь
     LZ4_saveDict(lz4Stream, dictBuffer.data(), dictBuffer.size());
 
@@ -91,13 +91,12 @@ int LZ4Coder::lz4_compress_fast(cv::Mat& frame) {
 }
 
 // Сжатие LZ4 (fast)
-int lz4_compress_fast(LZ4_stream_t* lz4Stream, const std::vector<char>& input, std::vector<char>& compressed,
-                      int acceleration) {
+int lz4_compress_fast(LZ4_stream_t* lz4Stream, const std::vector<char>& input, std::vector<char>& compressed, int acceleration) {
     int inputSize = input.size();
     compressed.resize(LZ4_compressBound(inputSize));
 
-    int compressedSize = LZ4_compress_fast_continue(lz4Stream, input.data(), compressed.data(), inputSize,
-                                                    compressed.size(), acceleration);
+    int compressedSize =
+        LZ4_compress_fast_continue(lz4Stream, input.data(), compressed.data(), inputSize, compressed.size(), acceleration);
 
     if (compressedSize <= 0) return -1;
     compressed.resize(compressedSize);
@@ -108,14 +107,15 @@ int lz4_compress_fast(LZ4_stream_t* lz4Stream, const std::vector<char>& input, s
 
 #pragma region zlib
 
-//Использование потока не отработано и не работает
+// Использование потока не отработано и не работает
 ZLIBCoder::ZLIBCoder() {
     zStream.zalloc = Z_NULL;
     zStream.zfree = Z_NULL;
     zStream.opaque = Z_NULL;
 
-    deflateInit(&zStream, Z_DEFAULT_COMPRESSION);
-    zBuffer.resize(32768);
+    if (deflateInit(&zStream, Z_BEST_SPEED) != Z_OK) std::cerr << "Error deflate init" << std::endl;
+
+    zBuffer.resize(256 * 1024);
 }
 
 ZLIBCoder::~ZLIBCoder() { deflateEnd(&zStream); }
@@ -130,35 +130,42 @@ int ZLIBCoder::zlib_compress_stream(cv::Mat& frame) {
     uncompressedData.assign(data, data + size);
     originalSize = uncompressedData.size();
 
+    zStream.avail_in = originalSize;
+    zStream.next_in = uncompressedData.data();
+
+    // Сброс потока для этой операции сжатия
+    if (deflateReset(&zStream) != Z_OK) {
+        std::cerr << "Rror deflate reset" << std::endl;
+        return -1;
+    }
 
     zStream.avail_in = originalSize;
     zStream.next_in = uncompressedData.data();
 
     int ret;
-    do {    
-        deflateReset(&zStream);  // Сброс перед новым сжатием
-
+    do {
         zStream.avail_out = zBuffer.size();
         zStream.next_out = zBuffer.data();
 
         ret = deflate(&zStream, Z_FINISH);
 
         if (ret != Z_OK && ret != Z_STREAM_END) {
-            std::cerr << "Deflate error: " << ret << std::endl;
-            break;
+            std::cerr << "Error deflate: " << ret << std::endl;
+            return -1;
         }
 
         size_t bytesCompressed = zBuffer.size() - zStream.avail_out;
         compressedData.insert(compressedData.end(), zBuffer.data(), zBuffer.data() + bytesCompressed);
 
     } while (ret != Z_STREAM_END);
+
     compressedSize = compressedData.size();
     return compressedSize;
 }
 
 int ZLIBCoder::zlib_compress_fast(cv::Mat& frame) {
     originalSize = frame.total() * frame.elemSize();
-    
+
     uLongf compressedSize = compressBound(originalSize);
     compressedData.resize(compressedSize);
 
@@ -168,9 +175,7 @@ int ZLIBCoder::zlib_compress_fast(cv::Mat& frame) {
         std::cerr << "compress error " << result << std::endl;
         return 0;  // Ошибка сжатия
     }
-    point(3);
     return compressedSize;
-
 }
 
 // Функция для сжатия с использованием стандартного уровня
@@ -226,54 +231,93 @@ ZSTDCoder::ZSTDCoder() {
 
 ZSTDCoder::~ZSTDCoder() { ZSTD_freeCStream(cstream); }
 
-bool ZSTDCoder::compress_stream(cv::Mat frame) {
+bool ZSTDCoder::zstd_compress_stream(cv::Mat frame) {
     inputFrame = frame.clone();
 
     const char* data = reinterpret_cast<const char*>(inputFrame.data);
     size_t size = inputFrame.total() * inputFrame.elemSize();
 
     uncomressedData = std::vector<char>(data, data + size);
+    originalSize = uncomressedData.size();
 
-    // Буферы
     size_t const buff_in_size = ZSTD_CStreamInSize();
     std::vector<char> buff_in(buff_in_size);
     size_t const buff_out_size = ZSTD_CStreamOutSize();
     std::vector<char> buff_out(buff_out_size);
 
-    // Входной буфер
+    ZSTD_initCStream(cstream, 3); // Реинициализация контекста
+
     ZSTD_inBuffer in_buf = {uncomressedData.data(), uncomressedData.size(), 0};
-    size_t to_read = buff_in_size;
+
+    compressedData.clear(); // Очищаем перед новым сжатием
 
     while (in_buf.pos < in_buf.size) {
-        // Копируем часть данных во временный буфер
-        size_t read_size = std::min(to_read, in_buf.size - in_buf.pos);
+        size_t read_size = std::min(buff_in_size, in_buf.size - in_buf.pos);
         memcpy(buff_in.data(), (char*)in_buf.src + in_buf.pos, read_size);
         in_buf.pos += read_size;
 
         ZSTD_inBuffer tmp_in_buf = {buff_in.data(), read_size, 0};
         while (tmp_in_buf.pos < tmp_in_buf.size) {
             ZSTD_outBuffer out_buf = {buff_out.data(), buff_out_size, 0};
-            size_t ret = ZSTD_compressStream(cstream, &out_buf, &tmp_in_buf);
+            size_t ret = ZSTD_compressStream2(cstream, &out_buf, &tmp_in_buf, ZSTD_e_flush);
             if (ZSTD_isError(ret)) {
-                ZSTD_freeCStream(cstream);
                 throw std::runtime_error(ZSTD_getErrorName(ret));
             }
-            // Добавляем сжатые данные в результат
             compressedData.insert(compressedData.end(), buff_out.data(), buff_out.data() + out_buf.pos);
         }
     }
 
-    // Завершаем сжатие
     ZSTD_outBuffer out_buf = {buff_out.data(), buff_out_size, 0};
     size_t ret = ZSTD_endStream(cstream, &out_buf);
     if (ZSTD_isError(ret)) {
-        ZSTD_freeCStream(cstream);
         throw std::runtime_error(ZSTD_getErrorName(ret));
     }
     compressedData.insert(compressedData.end(), buff_out.data(), buff_out.data() + out_buf.pos);
     compressedSize = compressedData.size();
-    // Очистка
-    ZSTD_freeCStream(cstream);
+
     return compressedSize > 0;
 }
+
+bool ZSTDCoder::zstd_compress(cv::Mat frame) {
+    inputFrame = frame.clone();
+
+    const char* data = reinterpret_cast<const char*>(inputFrame.data);
+    size_t size = inputFrame.total() * inputFrame.elemSize();
+
+    uncomressedData = std::vector<char>(data, data + size);
+    originalSize = size;
+
+    // Создаём контекст
+    ZSTD_CCtx* cctx = ZSTD_createCCtx();
+    if (!cctx) throw std::runtime_error("Не удалось создать ZSTD_CCtx");
+
+    // Настройка параметров
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, 1);  // можно 1 для скорости
+    //ZSTD_CCtx_setParameter(cctx, ZSTD_c_nbWorkers, 4); // для многопоточности
+
+    // Выделяем буфер
+    size_t max_compressed_size = ZSTD_compressBound(originalSize);
+    compressedData.resize(max_compressed_size);
+
+    // Сжимаем
+    size_t compressedSize = ZSTD_compress2(
+        cctx,
+        compressedData.data(), max_compressed_size,
+        uncomressedData.data(), originalSize
+    );
+
+    if (ZSTD_isError(compressedSize)) {
+        ZSTD_freeCCtx(cctx);
+        throw std::runtime_error(ZSTD_getErrorName(compressedSize));
+    }
+
+    compressedData.resize(compressedSize);
+    this->compressedSize = compressedSize;
+
+    ZSTD_freeCCtx(cctx);
+
+    return compressedSize > 0;
+}
+
+
 #pragma endregion

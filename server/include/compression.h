@@ -19,12 +19,12 @@ void point(int num);
 /* ============================================================================================================ */
 // Объявляем класс для сжатия библиотекой LZ4
 class LZ4Coder {
-    public:
-        // Конструктор и деструктор
-        LZ4Coder();
-        ~LZ4Coder();
-        // Параметры входные
-        cv::Mat inputFrame;
+public:
+    // Конструктор и деструктор
+    LZ4Coder();
+    ~LZ4Coder();
+    // Параметры входные
+    cv::Mat inputFrame;
 
     // Параметры выходные
     std::vector<char> compressedData;
@@ -41,36 +41,35 @@ private:
     void convertToCleanDataChar();
 };
 
-
 class ZLIBCoder {
-    public:
-        // Конструктор и деструктор
-        ZLIBCoder();
-        ~ZLIBCoder();
+public:
+    // Конструктор и деструктор
+    ZLIBCoder();
+    ~ZLIBCoder();
 
-        // Входные параметры
-        cv::Mat inputFrame;
-        
-        // Выходные параметры
-        std::vector<Bytef> compressedData, uncompressedData;
-        int originalSize;
-        uLongf compressedSize;
-        // Методы сжатия
-        int zlib_compress_stream(cv::Mat& frame);
+    // Входные параметры
+    cv::Mat inputFrame;
 
-        //int zlib_compress_default(cv::Mat& frame);
-        int zlib_compress_fast(cv::Mat& frame);
-        //int zlib_compress_high(cv::Mat& frame);
+    // Выходные параметры
+    std::vector<Bytef> compressedData, uncompressedData;
+    int originalSize;
+    uLongf compressedSize;
+    // Методы сжатия
+    int zlib_compress_stream(cv::Mat& frame);
 
-    private:
-        // Поток данных
-        z_stream zStream;
+    // int zlib_compress_default(cv::Mat& frame);
+    int zlib_compress_fast(cv::Mat& frame);
+    // int zlib_compress_high(cv::Mat& frame);
 
-        // Выходной буффер
-        std::vector<Bytef> zBuffer;
-    };
+private:
+    // Поток данных
+    z_stream zStream;
 
-//Методы сждатия zlib
+    // Выходной буффер
+    std::vector<Bytef> zBuffer;
+};
+
+// Методы сждатия zlib
 int zlib_compress_default(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 int zlib_compress_fast(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
 int zlib_compress_high(const std::vector<Bytef>& input, std::vector<Bytef>& compressed_data);
@@ -85,13 +84,15 @@ public:
 
     // Выходные данные
     std::vector<char> uncomressedData, compressedData;
-    int uncompressedSize, compressedSize;
+    int originalSize, compressedSize;
+    cv::Mat inputFrame;
+
 
     // Метод сжатия в потоке
-    bool compress_stream(cv::Mat frame);
+    bool zstd_compress_stream(cv::Mat frame);
+    bool zstd_compress(cv::Mat frame);
 
 private:
     ZSTD_CStream* cstream;
     ZSTD_inBuffer cBuffer;
-    cv::Mat inputFrame;
 };

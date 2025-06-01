@@ -8,4 +8,4 @@ SortIncludes: Never
 IndentPPDirectives: AfterHash
 IndentWidth:  4
 InsertNewlineAtEOF: On
-ColumnLimit: 120 
+ColumnLimit: 130 

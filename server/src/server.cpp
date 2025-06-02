@@ -43,8 +43,8 @@ bool TcpServer::TestConnect() { return socket.is_open(); }
 
 // Функция захвата кадров для отдельной камеры
 void captureFrames(CameraState &camState, int camIndex) {
-    camState.cap.set(cv::CAP_PROP_FRAME_WIDTH, VIDEO_WEIGHT);
-    camState.cap.set(cv::CAP_PROP_FRAME_HEIGHT, VIDEO_HEIGHT);
+    camState.cap.set(cv::CAP_PROP_FRAME_WIDTH, camState.width);
+    camState.cap.set(cv::CAP_PROP_FRAME_HEIGHT, camState.height);
     camState.cap.set(cv::CAP_PROP_FPS, 30);
     if (!camState.cap.isOpened()) {
         std::cerr << "Failed to open camera " << camIndex << std::endl;
@@ -104,7 +104,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -116,7 +116,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -223,7 +223,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -235,7 +235,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             if (!hasNewFrame) {
@@ -350,7 +350,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -362,7 +362,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -475,7 +475,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -488,7 +488,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -627,7 +627,7 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -639,7 +639,7 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -736,7 +736,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -748,7 +748,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -850,7 +850,7 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -862,7 +862,7 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -961,7 +961,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -973,7 +973,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -1090,7 +1090,7 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -1102,7 +1102,7 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -1199,7 +1199,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -1211,7 +1211,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -1313,7 +1313,7 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -1325,7 +1325,7 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 
@@ -1424,7 +1424,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame1.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame1 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
             {
@@ -1436,7 +1436,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 } else if (!frame2.empty()) {
                     // Используем предыдущий кадр
                 } else {
-                    frame2 = cv::Mat(VIDEO_HEIGHT, VIDEO_WEIGHT, CV_8UC3, cv::Scalar(0, 0, 0));
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
                 }
             }
 

@@ -7,9 +7,6 @@
 #include <mutex>
 #include <opencv2/videoio.hpp>
 
-#define VIDEO_WEIGHT 1920
-#define VIDEO_HEIGHT 1080
-
 using boost::asio::ip::tcp;
 
 #pragma region tcp_server
@@ -37,12 +34,52 @@ struct CameraState {
     std::mutex frameMutex;
     std::atomic<bool> running{true};
 
-    std::string file;
-    int currentFrame;
+    int height = 720;
+    int width = 1280;
 
-    CameraState(const std::string &filename) : file(filename), cap(filename) {};
-    CameraState(uint index, uint apiPreference) { cap.open(index, apiPreference); };
+    std::string file;
+    int currentFrame = 0;
+
+    // Конструкторы
+    CameraState() = default;
+
+    CameraState(const std::string &filename)
+        : file(filename), cap(filename) {}
+
+    CameraState(uint index, uint apiPreference) {
+        cap.open(index, apiPreference);
+    }
+
+    // Запрещаем копирование
+    CameraState(const CameraState &) = delete;
+    CameraState &operator=(const CameraState &) = delete;
+
+    // Разрешаем перемещение
+    CameraState(CameraState &&other) noexcept
+        : cap(std::move(other.cap)),
+          lastFrame(std::move(other.lastFrame)),
+          frameReady(other.frameReady.load()),
+          running(other.running.load()),
+          height(other.height),
+          width(other.width),
+          file(std::move(other.file)),
+          currentFrame(other.currentFrame) {}
+
+    CameraState &operator=(CameraState &&other) noexcept {
+        if (this != &other) {
+            cap = std::move(other.cap);
+            lastFrame = std::move(other.lastFrame);
+            frameReady.store(other.frameReady.load());
+            running.store(other.running.load());
+            height = other.height;
+            width = other.width;
+            file = std::move(other.file);
+            currentFrame = other.currentFrame;
+        }
+        return *this;
+    }
 };
+
 
 #pragma endregion
 

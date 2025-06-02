@@ -122,4 +122,14 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
 
 void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
 
+/* ============================================================================================================ */
+
+void zstd_gray_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void zstd_gray_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void zstd_gray_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
+void zstd_gray_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2);
+
 #pragma endregion

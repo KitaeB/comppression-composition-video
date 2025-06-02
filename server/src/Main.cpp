@@ -35,12 +35,20 @@ int main(int argc, char *argv[]) {
   while (true) {
     if (useVideo) {
       // Подключаем видео
-      cam1 = CameraState{"file_1.mp4"};
-      cam2 = CameraState{"file_2.mp4"};
+      cam1 = CameraState{"video/file_1.mp4"};
+      cam2 = CameraState{"video/file_2.mp4"};
     } else {
       // Подключаем камеры
-      cam1 = CameraState{0, cv::CAP_ANY};
-      cam2 = CameraState{1, cv::CAP_ANY};
+      // Кроссплатформенная инициализация камер
+      #ifdef _WIN32
+          // Windows — можно использовать DirectShow
+          cam1 = CameraState{0, cv::CAP_DSHOW};
+          cam2 = CameraState{1, cv::CAP_DSHOW};
+      #else
+          // Linux — предпочтительно V4L2
+          cam1 = CameraState{0, cv::CAP_V4L2};
+          cam2 = CameraState{1, cv::CAP_V4L2};
+      #endif
     }
 
     int choice = 0;
@@ -78,13 +86,13 @@ int main(int argc, char *argv[]) {
                 << std::endl;
       std::cout << "12. zstd compress, without concat, with prime frame"
                 << std::endl;
-      std::cout << "13. ?? compress, with concat, without prime frame "
+      std::cout << "13. zstd gray compress, with concat, without prime frame "
                 << std::endl;
-      std::cout << "14. ?? compress, with concat, with prime frame"
+      std::cout << "14. zstd gray compress, with concat, with prime frame"
                 << std::endl;
-      std::cout << "15. ?? compress, without concat, without prime frame"
+      std::cout << "15. zstd gray compress, without concat, without prime frame"
                 << std::endl;
-      std::cout << "16. ?? compress, without concat, with prime frame"
+      std::cout << "16. zstd gray compress, without concat, with prime frame"
                 << std::endl;
       std::cout << "Choose: ";
 
@@ -152,15 +160,19 @@ int main(int argc, char *argv[]) {
           break;
 
         case 13:
+          zstd_gray_concat_noprime(socket, cam1, cam2);
           break;
 
         case 14:
+          zstd_gray_concat_prime(socket, cam1, cam2);
           break;
 
         case 15:
+          zstd_gray_noconcat_noprime(socket, cam1, cam2);
           break;
 
         case 16:
+          zstd_gray_noconcat_prime(socket, cam1, cam2);
           break;
 
         default:

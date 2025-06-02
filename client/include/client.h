@@ -25,3 +25,13 @@ void zstd_concat_noprime(tcp::socket &socket);
 void zstd_concat_prime(tcp::socket &socket);
 void zstd_noconcat_noprime(tcp::socket &socket);
 void zstd_noconcat_prime(tcp::socket &socket);
+
+/* ============================================================================================================ */
+
+void zstd_gray_concat_noprime(tcp::socket &socket);
+void zstd_gray_concat_prime(tcp::socket &socket);
+void zstd_gray_noconcat_noprime(tcp::socket &socket);
+void zstd_gray_noconcat_prime(tcp::socket &socket);
+
+/* ============================================================================================================ */
+

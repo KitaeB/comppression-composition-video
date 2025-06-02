@@ -36,7 +36,7 @@ find_package(zstd CONFIG REQUIRED)
 target_link_libraries(client-ccv PRIVATE
     ${OpenCV_LIBS}
     Boost::system
-    lz4
+    lz4::lz4
     ZLIB::ZLIB
     zstd::libzstd
 )

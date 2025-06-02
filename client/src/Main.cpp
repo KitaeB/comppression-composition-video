@@ -79,15 +79,19 @@ int main() {
                     break;
 
                 case 13:
+                    zstd_gray_concat_noprime(socket);
                     break;
 
                 case 14:
+                    zstd_gray_concat_prime(socket);
                     break;
 
                 case 15:
+                    zstd_gray_noconcat_noprime(socket);
                     break;
 
                 case 16:
+                    zstd_gray_noconcat_prime(socket);
                     break;
 
                 default:

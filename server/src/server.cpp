@@ -129,6 +129,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             t1 = std::chrono::steady_clock::now();
 
             // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
@@ -138,7 +139,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             else if (last_duration < 15 && lz4Coder.acceleration > 1)
                 lz4Coder.acceleration--;
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
 
             // Сожмём данные с lz4-fast
             if (lz4Coder.lz4_compress_fast(frame) > 0) {
@@ -148,7 +149,8 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 int cols = frame.cols;
                 int type = frame.type();
 
-                // std::cout << "rows: " << rows << " Cols: " << cols << " Type: " << type
+                // std::cout << "rows: " << rows << " Cols: " << cols << " Type: " <<
+                // type
                 // << std::endl;
 
                 // Передаём метаданные по сокету
@@ -176,7 +178,8 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -248,6 +251,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
             t1 = std::chrono::steady_clock::now();
 
             // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
             // cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
@@ -266,7 +270,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
                 lz4Coder.acceleration--;
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
 
             // Сожмём данные с zlib-default
             if (lz4Coder.lz4_compress_fast(frame) > 0) {
@@ -304,7 +308,8 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
                 currentFrame++;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -380,7 +385,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
             lz4Coder2.acceleration = lz4Coder1.acceleration;
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
 
             // Сожмём данные с zlib-default
             if ((lz4Coder1.lz4_compress_fast(frame1) > 0) && (lz4Coder2.lz4_compress_fast(frame2) > 0)) {
@@ -390,7 +395,8 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                 int cols = frame1.cols;
                 int type = frame1.type();
 
-                // std::cout << "rows: " << rows << " Cols: " << cols << " Type: " << type
+                // std::cout << "rows: " << rows << " Cols: " << cols << " Type: " <<
+                // type
                 // << std::endl;
 
                 // Передаём метаданные по сокету
@@ -426,7 +432,8 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -506,7 +513,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             lz4Coder2.acceleration = lz4Coder1.acceleration;
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
 
             tempFrame1 = frame1.clone();
             // cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
@@ -532,7 +539,8 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 int type1 = frame1.type();
                 int type2 = frame2.type();
 
-                // std::cout << "rows: " << rows << " Cols: " << cols << " Type: " << type
+                // std::cout << "rows: " << rows << " Cols: " << cols << " Type: " <<
+                // type
                 // << std::endl;
 
                 // Передаём метаданные по сокету
@@ -576,7 +584,8 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -652,6 +661,7 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             // После получения
             t1 = std::chrono::steady_clock::now();
             // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
@@ -689,7 +699,8 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -760,7 +771,9 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
 
             // После получения
             t1 = std::chrono::steady_clock::now();
+
             // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
@@ -803,7 +816,8 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -873,7 +887,7 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
             }
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
             // Сожмём данные с zlib-fast
             if ((zCoder_1.zlib_compress_stream(frame1) > 0) && (zCoder_2.zlib_compress_stream(frame2)) > 0) {
                 t3 = std::chrono::steady_clock::now();  // После сжатия
@@ -914,7 +928,8 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -984,7 +999,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             }
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
             tempFrame_1 = frame1.clone();
             if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = frameSubstraction(frame1, prevFrame_1);
             prevFrame_1 = tempFrame_1.clone();
@@ -1039,7 +1054,8 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -1055,7 +1071,6 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 #pragma endregion
 
 #pragma region zstd
-
 
 void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2) {
     // Проверяем, открылась ли хотя бы одна камера
@@ -1115,6 +1130,7 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             // После получения
             t1 = std::chrono::steady_clock::now();
             // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
@@ -1152,7 +1168,8 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -1224,6 +1241,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
             // После получения
             t1 = std::chrono::steady_clock::now();
             // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
@@ -1266,7 +1284,8 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -1336,7 +1355,7 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
             }
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
             // Сожмём данные с zlib-fast
             if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
                 t3 = std::chrono::steady_clock::now();  // После сжатия
@@ -1377,7 +1396,8 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;
@@ -1447,7 +1467,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             }
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
-                                                             // объединение
+                                                    // объединение
             tempFrame_1 = frame1.clone();
             if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = frameSubstraction(frame1, prevFrame_1);
             prevFrame_1 = tempFrame_1.clone();
@@ -1502,7 +1522,491 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                           << std::endl;
             }
         }
-    } catch (...) {
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
+        // Останавливаем потоки
+        cam1.running = false;
+        cam2.running = false;
+        if (cam1Thread.joinable()) cam1Thread.join();
+        if (cam2Thread.joinable()) cam2Thread.join();
+
+        cam1.cap.release();
+        cam2.cap.release();
+
+        cv::destroyAllWindows();
+    }
+}
+
+#pragma endregion
+
+#pragma region zstd_gray
+
+void zstd_gray_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2) {
+    // Проверяем, открылась ли хотя бы одна камера
+    if (!cam1.cap.isOpened() && !cam2.cap.isOpened()) {
+        std::cerr << "No cameras opened" << std::endl;
+        return;
+    }
+    // Запускаем потоки для захвата кадров
+    std::thread cam1Thread(captureFrames, std::ref(cam1), 0);
+    std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
+
+    // Объявляем фреймы
+    cv::Mat frame1, frame2, frame;
+
+    // Кодер
+    ZSTDCoder cCoder = ZSTDCoder();
+
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    // основной цикл
+    try {
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
+            // Читаем данные с камер
+            bool hasNewFrame = false;
+            {
+                std::lock_guard<std::mutex> lock1(cam1.frameMutex);
+                if (cam1.frameReady && !cam1.lastFrame.empty()) {
+                    frame1 = cam1.lastFrame.clone();
+                    cam1.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame1.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+            {
+                std::lock_guard<std::mutex> lock2(cam2.frameMutex);
+                if (cam2.frameReady && !cam2.lastFrame.empty()) {
+                    frame2 = cam2.lastFrame.clone();
+                    cam2.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame2.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+
+            if (!hasNewFrame) {
+                // Если нет новых кадров, ждем немного
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }
+
+            // После получения
+            t1 = std::chrono::steady_clock::now();
+            // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
+            cv::hconcat(frame1, frame2, frame);
+
+            if (frame.channels() == 3)
+                cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+
+            auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
+
+            // Сожмём данные с zlib-default
+            if (cCoder.zstd_compress(frame) > 0) {
+                t3 = std::chrono::steady_clock::now();  // После сжатия
+                // Объявим метаданные передаваеммого кадра
+                int rows = frame.rows;
+                int cols = frame.cols;
+                int type = frame.type();
+
+                // Передаём метаданные по сокету
+                boost::asio::write(socket, boost::asio::buffer(&rows, sizeof(rows)));
+                boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
+                boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
+
+                boost::asio::write(socket, boost::asio::buffer(&cCoder.compressedSize, sizeof(cCoder.compressedSize)));
+
+                boost::asio::write(socket, boost::asio::buffer(&cCoder.originalSize, sizeof(cCoder.originalSize)));
+
+                // Отправка данных клиенту
+                boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
+                t4 = std::chrono::steady_clock::now();  // После передачи
+
+                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                          << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                          << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                          << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
+                          << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
+                          << " uncompressed data: " << cCoder.originalSize << " compressed data: " << cCoder.compressedSize
+                          << " koef: " << static_cast<double>(cCoder.originalSize) / static_cast<double>(cCoder.compressedSize)
+                          << std::endl;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
+        // Останавливаем потоки
+        cam1.running = false;
+        cam2.running = false;
+        if (cam1Thread.joinable()) cam1Thread.join();
+        if (cam2Thread.joinable()) cam2Thread.join();
+
+        cam1.cap.release();
+        cam2.cap.release();
+
+        cv::destroyAllWindows();
+    }
+}
+
+void zstd_gray_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2) {
+    // Проверяем, открылась ли хотя бы одна камера
+    if (!cam1.cap.isOpened() && !cam2.cap.isOpened()) {
+        std::cerr << "No cameras opened" << std::endl;
+        return;
+    }
+    // Запускаем потоки для захвата кадров
+    std::thread cam1Thread(captureFrames, std::ref(cam1), 0);
+    std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
+
+    // Объявляем фреймы
+    cv::Mat frame1, frame2, frame, prevFrame, tempFrame;
+    int currentFrame = 0;
+    // Кодер
+    ZSTDCoder cCoder = ZSTDCoder();
+
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    // основной цикл
+    try {
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
+            // Читаем данные с камер
+            bool hasNewFrame = false;
+            {
+                std::lock_guard<std::mutex> lock1(cam1.frameMutex);
+                if (cam1.frameReady && !cam1.lastFrame.empty()) {
+                    frame1 = cam1.lastFrame.clone();
+                    cam1.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame1.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+            {
+                std::lock_guard<std::mutex> lock2(cam2.frameMutex);
+                if (cam2.frameReady && !cam2.lastFrame.empty()) {
+                    frame2 = cam2.lastFrame.clone();
+                    cam2.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame2.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+
+            if (!hasNewFrame) {
+                // Если нет новых кадров, ждем немного
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }
+
+            // После получения
+            t1 = std::chrono::steady_clock::now();
+            // производим соединение кадров
+            cv::resize(frame2, frame2, frame1.size());
+            cv::hconcat(frame1, frame2, frame);
+
+            if (frame.channels() == 3)
+                cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+
+            auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
+
+            tempFrame = frame.clone();
+            if ((currentFrame % 30) == 0 && !cCoder.inputFrame.empty()) frame = frameSubstraction(frame, prevFrame);
+            prevFrame = tempFrame.clone();
+
+            // Сожмём данные с zlib-default
+            if (cCoder.zstd_compress(frame) > 0) {
+                t3 = std::chrono::steady_clock::now();  // После сжатия
+                // Объявим метаданные передаваеммого кадра
+                int rows = frame.rows;
+                int cols = frame.cols;
+                int type = frame.type();
+
+                // Передаём метаданные по сокету
+                boost::asio::write(socket, boost::asio::buffer(&rows, sizeof(rows)));
+                boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
+                boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
+                boost::asio::write(socket, boost::asio::buffer(&currentFrame, sizeof(currentFrame)));
+
+                boost::asio::write(socket, boost::asio::buffer(&cCoder.compressedSize, sizeof(cCoder.compressedSize)));
+
+                boost::asio::write(socket, boost::asio::buffer(&cCoder.originalSize, sizeof(cCoder.originalSize)));
+
+                // Отправка данных клиенту
+                boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
+                t4 = std::chrono::steady_clock::now();  // После передачи
+
+                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                          << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                          << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                          << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
+                          << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
+                          << " uncompressed data: " << cCoder.originalSize << " compressed data: " << cCoder.compressedSize
+                          << " koef: " << static_cast<double>(cCoder.originalSize) / static_cast<double>(cCoder.compressedSize)
+                          << std::endl;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
+        // Останавливаем потоки
+        cam1.running = false;
+        cam2.running = false;
+        if (cam1Thread.joinable()) cam1Thread.join();
+        if (cam2Thread.joinable()) cam2Thread.join();
+
+        cam1.cap.release();
+        cam2.cap.release();
+
+        cv::destroyAllWindows();
+    }
+}
+
+void zstd_gray_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam2) {
+    // Проверяем, открылась ли хотя бы одна камера
+    if (!cam1.cap.isOpened() && !cam2.cap.isOpened()) {
+        std::cerr << "No cameras opened" << std::endl;
+        return;
+    }
+
+    // Запускаем потоки для захвата кадров
+    std::thread cam1Thread(captureFrames, std::ref(cam1), 0);
+    std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
+
+    // Объявляем фреймы
+    cv::Mat frame1, frame2, prevFrame;
+    // Кодеры
+    ZSTDCoder cCoder_1 = ZSTDCoder(), cCoder_2 = ZSTDCoder();
+
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    try {
+        // основной цикл
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
+            // Читаем данные с камер
+            bool hasNewFrame = false;
+            {
+                std::lock_guard<std::mutex> lock1(cam1.frameMutex);
+                if (cam1.frameReady && !cam1.lastFrame.empty()) {
+                    frame1 = cam1.lastFrame.clone();
+                    cam1.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame1.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+            {
+                std::lock_guard<std::mutex> lock2(cam2.frameMutex);
+                if (cam2.frameReady && !cam2.lastFrame.empty()) {
+                    frame2 = cam2.lastFrame.clone();
+                    cam2.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame2.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+
+            if (!hasNewFrame) {
+                // Если нет новых кадров, ждем немного
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }
+
+            t2 = std::chrono::steady_clock::now();             // Изменение размера и объединение
+            if (frame1.channels() == 3)
+                cv::cvtColor(frame1, frame1, cv::COLOR_BGR2GRAY);
+            if (frame2.channels() == 3)
+                cv::cvtColor(frame2, frame2, cv::COLOR_BGR2GRAY);
+
+            // Сожмём данные с zlib-fast
+            if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
+                t3 = std::chrono::steady_clock::now();  // После сжатия
+                // Объявим метаданные передаваеммого кадра
+                int rows = frame1.rows;
+                int cols = frame1.cols;
+                int type = frame1.type();
+
+                // Передаём метаданные по сокету
+                boost::asio::write(socket, boost::asio::buffer(&rows, sizeof(rows)));
+                boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
+                boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
+
+                // Размер сжатых данных первого кадра
+                boost::asio::write(socket, boost::asio::buffer(&cCoder_1.compressedSize, sizeof(cCoder_1.compressedSize)));
+
+                // Размер сжатых данных второго кадра
+                boost::asio::write(socket, boost::asio::buffer(&cCoder_2.compressedSize, sizeof(cCoder_2.compressedSize)));
+
+                // Мы считаем, что исходные данные одинаковые по размеры
+                boost::asio::write(socket, boost::asio::buffer(&cCoder_1.originalSize, sizeof(cCoder_1.originalSize)));
+
+                // Отправка данных клиенту кадр 1
+                boost::asio::write(socket, boost::asio::buffer(cCoder_1.compressedData));
+                // Отправка данных клиенту кадр 2
+                boost::asio::write(socket, boost::asio::buffer(cCoder_2.compressedData));
+
+                t4 = std::chrono::steady_clock::now();  // После передачи
+
+                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                          << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                          << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
+                          << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
+                          << " uncompressed data: " << cCoder_1.originalSize * 2
+                          << " compressed data: " << cCoder_1.compressedSize + cCoder_2.compressedSize << " koef: "
+                          << static_cast<double>(cCoder_1.originalSize * 2) /
+                                 static_cast<double>(cCoder_1.compressedSize + cCoder_2.compressedSize)
+                          << std::endl;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
+        // Останавливаем потоки
+        cam1.running = false;
+        cam2.running = false;
+        if (cam1Thread.joinable()) cam1Thread.join();
+        if (cam2Thread.joinable()) cam2Thread.join();
+
+        cam1.cap.release();
+        cam2.cap.release();
+
+        cv::destroyAllWindows();
+    }
+}
+
+void zstd_gray_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2) {
+    // Проверяем, открылась ли хотя бы одна камера
+    if (!cam1.cap.isOpened() && !cam2.cap.isOpened()) {
+        std::cerr << "No cameras opened" << std::endl;
+        return;
+    }
+
+    // Запускаем потоки для захвата кадров
+    std::thread cam1Thread(captureFrames, std::ref(cam1), 0);
+    std::thread cam2Thread(captureFrames, std::ref(cam2), 1);
+
+    // Объявляем фреймы
+    cv::Mat frame1, frame2, prevFrame_1, prevFrame_2, tempFrame_1, tempFrame_2;
+    // Кодеры
+    ZSTDCoder cCoder_1 = ZSTDCoder(), cCoder_2 = ZSTDCoder();
+
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    try {
+        // основной цикл
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
+            // Читаем данные с камер
+            bool hasNewFrame = false;
+            {
+                std::lock_guard<std::mutex> lock1(cam1.frameMutex);
+                if (cam1.frameReady && !cam1.lastFrame.empty()) {
+                    frame1 = cam1.lastFrame.clone();
+                    cam1.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame1.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame1 = cv::Mat(cam1.height, cam1.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+            {
+                std::lock_guard<std::mutex> lock2(cam2.frameMutex);
+                if (cam2.frameReady && !cam2.lastFrame.empty()) {
+                    frame2 = cam2.lastFrame.clone();
+                    cam2.frameReady = false;
+                    hasNewFrame = true;
+                } else if (!frame2.empty()) {
+                    // Используем предыдущий кадр
+                } else {
+                    frame2 = cv::Mat(cam2.height, cam2.width, CV_8UC3, cv::Scalar(0, 0, 0));
+                }
+            }
+
+            if (!hasNewFrame) {
+                // Если нет новых кадров, ждем немного
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
+            }
+
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
+            if (frame1.channels() == 3)
+                cv::cvtColor(frame1, frame1, cv::COLOR_BGR2GRAY);
+            if (frame2.channels() == 3)
+                cv::cvtColor(frame2, frame2, cv::COLOR_BGR2GRAY);
+
+            tempFrame_1 = frame1.clone();
+            if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = frameSubstraction(frame1, prevFrame_1);
+            prevFrame_1 = tempFrame_1.clone();
+
+            tempFrame_2 = frame2.clone();
+            if ((cam2.currentFrame % 30) == 0 && !prevFrame_2.empty()) frame2 = frameSubstraction(frame2, prevFrame_2);
+            prevFrame_2 = tempFrame_2.clone();
+
+            // Сожмём данные с zlib-fast
+            if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
+                t3 = std::chrono::steady_clock::now();  // После сжатия
+                // Объявим метаданные передаваеммого кадра
+                int rows = frame1.rows;
+                int cols = frame1.cols;
+                int type1 = frame1.type();
+                int type2 = frame2.type();
+
+                // Передаём метаданные по сокету
+                boost::asio::write(socket, boost::asio::buffer(&rows, sizeof(rows)));
+                boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
+                boost::asio::write(socket, boost::asio::buffer(&type1, sizeof(type1)));
+                boost::asio::write(socket, boost::asio::buffer(&type2, sizeof(type2)));
+
+                boost::asio::write(socket, boost::asio::buffer(&cam1.currentFrame, sizeof(cam1.currentFrame)));
+                boost::asio::write(socket, boost::asio::buffer(&cam2.currentFrame, sizeof(cam2.currentFrame)));
+
+                // Размер сжатых данных первого кадра
+                boost::asio::write(socket, boost::asio::buffer(&cCoder_1.compressedSize, sizeof(cCoder_1.compressedSize)));
+
+                // Размер сжатых данных второго кадра
+                boost::asio::write(socket, boost::asio::buffer(&cCoder_2.compressedSize, sizeof(cCoder_2.compressedSize)));
+
+                // Мы считаем, что исходные данные могут быть разные по размеру
+                boost::asio::write(socket, boost::asio::buffer(&cCoder_1.originalSize, sizeof(cCoder_1.originalSize)));
+                boost::asio::write(socket, boost::asio::buffer(&cCoder_2.originalSize, sizeof(cCoder_2.originalSize)));
+
+                // Отправка данных клиенту кадр 1
+                boost::asio::write(socket, boost::asio::buffer(cCoder_1.compressedData));
+                // Отправка данных клиенту кадр 2
+                boost::asio::write(socket, boost::asio::buffer(cCoder_2.compressedData));
+
+                t4 = std::chrono::steady_clock::now();  // После передачи
+
+                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                          << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                          << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
+                          << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
+                          << " uncompressed data: " << cCoder_1.originalSize + cCoder_2.originalSize
+                          << " compressed data: " << cCoder_1.compressedSize + cCoder_2.compressedSize << " koef: "
+                          << static_cast<double>(cCoder_1.originalSize + cCoder_2.originalSize) /
+                                 static_cast<double>(cCoder_1.compressedSize + cCoder_2.compressedSize)
+                          << std::endl;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in work: " << ex.what() << std::endl;
         // Останавливаем потоки
         cam1.running = false;
         cam2.running = false;

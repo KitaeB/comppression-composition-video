@@ -27,7 +27,7 @@ endif()
 
 # Поиск библиотек через vcpkg
 find_package(OpenCV REQUIRED)
-find_package(Boost REQUIRED COMPONENTS filesystem system)
+find_package(Boost REQUIRED COMPONENTS system)
 find_package(lz4 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(zstd CONFIG REQUIRED)
@@ -35,8 +35,8 @@ find_package(zstd CONFIG REQUIRED)
 # Подключение зависимостей
 target_link_libraries(server-ccv PRIVATE
     ${OpenCV_LIBS}
-    Boost::filesystem Boost::system
-    lz4
+    Boost::system
+    lz4::lz4
     ZLIB::ZLIB
     zstd::libzstd
 )

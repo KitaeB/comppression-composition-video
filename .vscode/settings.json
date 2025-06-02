@@ -97,6 +97,5 @@
     "cmake.sourceDirectory": "/home/administrator/repos/comppression-composition-video/server",
     "editor.formatOnPaste": false,
     "editor.formatOnType": false,
-    "clangd.trace": ".clang-format",
     "clang-format.assumeFilename": ".clang-format"
 }

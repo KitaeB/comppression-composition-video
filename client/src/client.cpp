@@ -54,8 +54,8 @@ void lz4_concat_noprime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -112,8 +112,8 @@ void lz4_concat_prime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -174,8 +174,8 @@ void lz4_noconcat_noprime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -256,8 +256,8 @@ void lz4_noconcat_prime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -316,8 +316,8 @@ void zlib_concat_noprime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -377,8 +377,8 @@ void zlib_concat_prime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -433,9 +433,9 @@ void zlib_noconcat_noprime(tcp::socket &socket) {
                       << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                       << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
-                      << " uncompressed data: " << zDecoder_1.originalSize + zDecoder_2.originalSize
+                      << " uncompressed data: " << zDecoder_1.decompressedSize + zDecoder_2.decompressedSize
                       << " compressed data: " << zDecoder_1.compressedSize + zDecoder_2.compressedSize << " koef: "
-                      << static_cast<double>(zDecoder_1.originalSize + zDecoder_2.originalSize) /
+                      << static_cast<double>(zDecoder_1.decompressedSize + zDecoder_2.decompressedSize) /
                              static_cast<double>(zDecoder_1.compressedSize + zDecoder_2.compressedSize)
                       << std::endl;
             // Обязательно waitKey
@@ -444,8 +444,8 @@ void zlib_noconcat_noprime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -513,9 +513,9 @@ void zlib_noconcat_prime(tcp::socket &socket) {
                       << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                       << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
-                      << " uncompressed data: " << zDecoder_1.originalSize + zDecoder_2.originalSize
+                      << " uncompressed data: " << zDecoder_1.decompressedSize + zDecoder_2.decompressedSize
                       << " compressed data: " << zDecoder_1.compressedSize + zDecoder_2.compressedSize << " koef: "
-                      << static_cast<double>(zDecoder_1.originalSize + zDecoder_2.originalSize) /
+                      << static_cast<double>(zDecoder_1.decompressedSize + zDecoder_2.decompressedSize) /
                              static_cast<double>(zDecoder_1.compressedSize + zDecoder_2.compressedSize)
                       << std::endl;
             // Обязательно waitKey
@@ -524,8 +524,8 @@ void zlib_noconcat_prime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -533,7 +533,6 @@ void zlib_noconcat_prime(tcp::socket &socket) {
 #pragma endregion
 
 #pragma region zstd
-
 
 void zstd_concat_noprime(tcp::socket &socket) {
     int rows, cols, type;
@@ -585,8 +584,8 @@ void zstd_concat_noprime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -646,8 +645,8 @@ void zstd_concat_prime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -702,9 +701,9 @@ void zstd_noconcat_noprime(tcp::socket &socket) {
                       << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                       << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
-                      << " uncompressed data: " << cDecoder_1.originalSize + cDecoder_2.originalSize
+                      << " uncompressed data: " << cDecoder_1.decompressedSize + cDecoder_2.decompressedSize
                       << " compressed data: " << cDecoder_1.compressedSize + cDecoder_2.compressedSize << " koef: "
-                      << static_cast<double>(cDecoder_1.originalSize + cDecoder_2.originalSize) /
+                      << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
                              static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
                       << std::endl;
             // Обязательно waitKey
@@ -713,8 +712,8 @@ void zstd_noconcat_noprime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }
@@ -782,9 +781,9 @@ void zstd_noconcat_prime(tcp::socket &socket) {
                       << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                       << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
-                      << " uncompressed data: " << cDecoder_1.originalSize + cDecoder_2.originalSize
+                      << " uncompressed data: " << cDecoder_1.decompressedSize + cDecoder_2.decompressedSize
                       << " compressed data: " << cDecoder_1.compressedSize + cDecoder_2.compressedSize << " koef: "
-                      << static_cast<double>(cDecoder_1.originalSize + cDecoder_2.originalSize) /
+                      << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
                              static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
                       << std::endl;
             // Обязательно waitKey
@@ -793,8 +792,276 @@ void zstd_noconcat_prime(tcp::socket &socket) {
                 break;
             }
         }
-    } catch (...) {
-        std::cerr << "Error in receiving frame. Closing..." << std::endl;
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
+        cv::destroyAllWindows();
+    }
+}
+
+#pragma endregion
+
+#pragma region zstd_gray
+
+void zstd_gray_concat_noprime(tcp::socket &socket) {
+    int rows, cols, type;
+
+    // Декодер
+    ZSTDDecoder cDecoder = ZSTDDecoder();
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    point(11);
+    try {
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения данных
+            // Читаем метаданные
+            boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
+            boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
+            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder.compressedSize, sizeof(cDecoder.compressedSize)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder.originalSize, sizeof(cDecoder.originalSize)));
+
+            // Читаем данные кадра
+            cDecoder.compressedData.resize(cDecoder.compressedSize);
+
+            boost::asio::read(socket, boost::asio::buffer(cDecoder.compressedData));
+
+            t1 = std::chrono::steady_clock::now();  // После получения данных
+
+            cDecoder.outputFrame = cv::Mat(rows, cols, type);
+
+            if (cDecoder.zstd_decompress_stream()) {
+                cv::imshow("webcam", cDecoder.outputFrame);
+            }
+            t2 = std::chrono::steady_clock::now();  // После сжатия
+
+            t3 = std::chrono::steady_clock::now();  // После отображения
+
+            std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                      << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
+                      << " uncompressed data: " << cDecoder.decompressedSize << " compressed data: " << cDecoder.compressedSize
+                      << " koef: "
+                      << static_cast<double>(cDecoder.decompressedSize) / static_cast<double>(cDecoder.compressedSize)
+                      << std::endl;
+            // Обязательно waitKey
+            if (cv::waitKey(1) == 27) {  // Нажал ESC
+                cv::destroyAllWindows();
+                break;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
+        cv::destroyAllWindows();
+    }
+}
+
+void zstd_gray_concat_prime(tcp::socket &socket) {
+    int rows, cols, type, currentFrame;
+    cv::Mat prevFrame;
+    // Декодер
+    ZSTDDecoder cDecoder = ZSTDDecoder();
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    point(6);
+    try {
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения данных
+            // Читаем метаданные
+            boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
+            boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
+            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
+            boost::asio::read(socket, boost::asio::buffer(&currentFrame, sizeof(currentFrame)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder.compressedSize, sizeof(cDecoder.compressedSize)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder.originalSize, sizeof(cDecoder.originalSize)));
+
+            // Читаем данные кадра
+            cDecoder.compressedData.resize(cDecoder.compressedSize);
+
+            boost::asio::read(socket, boost::asio::buffer(cDecoder.compressedData));
+
+            t1 = std::chrono::steady_clock::now();  // После получения данных
+
+            cDecoder.outputFrame = cv::Mat(rows, cols, type);
+
+            if (cDecoder.zstd_decompress_stream()) {
+                if ((currentFrame % 30 == 0) && !prevFrame.empty())
+                    cDecoder.outputFrame = frameAddiiton(cDecoder.outputFrame, prevFrame);
+                prevFrame = cDecoder.outputFrame.clone();
+
+                cv::imshow("webcam", cDecoder.outputFrame);
+            }
+            t2 = std::chrono::steady_clock::now();  // После сжатия
+
+            t3 = std::chrono::steady_clock::now();  // После отображения
+
+            std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                      << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
+                      << " uncompressed data: " << cDecoder.decompressedSize << " compressed data: " << cDecoder.compressedSize
+                      << " koef: "
+                      << static_cast<double>(cDecoder.decompressedSize) / static_cast<double>(cDecoder.compressedSize)
+                      << std::endl;
+            // Обязательно waitKey
+            if (cv::waitKey(1) == 27) {  // Нажал ESC
+                cv::destroyAllWindows();
+                break;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
+        cv::destroyAllWindows();
+    }
+}
+
+void zstd_gray_noconcat_noprime(tcp::socket &socket) {
+    int rows, cols, type;
+
+    // Декодер
+    ZSTDDecoder cDecoder_1 = ZSTDDecoder(), cDecoder_2 = ZSTDDecoder();
+
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    std::cout << "point 10 " << std::endl;
+    try {
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения данных
+            // Читаем метаданные
+            boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
+            boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
+            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder_1.compressedSize, sizeof(cDecoder_1.compressedSize)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder_2.compressedSize, sizeof(cDecoder_2.compressedSize)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder_1.originalSize, sizeof(cDecoder_1.originalSize)));
+
+            // Читаем данные первого кадра
+            cDecoder_1.compressedData.resize(cDecoder_1.compressedSize);
+            boost::asio::read(socket, boost::asio::buffer(cDecoder_1.compressedData));
+
+            // Читаем данные второго кадра
+            cDecoder_2.compressedData.resize(cDecoder_2.compressedSize);
+            boost::asio::read(socket, boost::asio::buffer(cDecoder_2.compressedData));
+
+            t1 = std::chrono::steady_clock::now();  // После получения данных
+
+            cDecoder_1.outputFrame = cv::Mat(rows, cols, type);
+            if (cDecoder_1.zstd_decompress_stream()) {
+                cv::imshow("webcam1", cDecoder_1.outputFrame);
+            }
+
+            cDecoder_2.outputFrame = cv::Mat(rows, cols, type);
+            if (cDecoder_2.zstd_decompress_stream()) {
+                cv::imshow("webcam2", cDecoder_2.outputFrame);
+            }
+            t2 = std::chrono::steady_clock::now();  // После сжатия
+
+            t3 = std::chrono::steady_clock::now();  // После отображения
+
+            std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                      << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
+                      << " uncompressed data: " << cDecoder_1.decompressedSize + cDecoder_2.decompressedSize
+                      << " compressed data: " << cDecoder_1.compressedSize + cDecoder_2.compressedSize << " koef: "
+                      << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
+                             static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
+                      << std::endl;
+            // Обязательно waitKey
+            if (cv::waitKey(1) == 27) {  // Нажал ESC
+                cv::destroyAllWindows();
+                break;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
+        cv::destroyAllWindows();
+    }
+}
+
+void zstd_gray_noconcat_prime(tcp::socket &socket) {
+    int rows, cols, type1, type2, currentFrame_1, currentFrame_2;
+    cv::Mat prevFrame1, prevFrame2;
+
+    // Декодер
+    ZSTDDecoder cDecoder_1 = ZSTDDecoder(), cDecoder_2 = ZSTDDecoder();
+
+    // Объявим временные метки
+    std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
+    std::cout << "point 7 " << std::endl;
+    try {
+        while (true) {
+            t0 = std::chrono::steady_clock::now();  // До получения данных
+            // Читаем метаданные
+            boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
+            boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
+            boost::asio::read(socket, boost::asio::buffer(&type1, sizeof(type1)));
+            boost::asio::read(socket, boost::asio::buffer(&type2, sizeof(type2)));
+
+            boost::asio::read(socket, boost::asio::buffer(&currentFrame_1, sizeof(currentFrame_1)));
+            boost::asio::read(socket, boost::asio::buffer(&currentFrame_2, sizeof(currentFrame_2)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder_1.compressedSize, sizeof(cDecoder_1.compressedSize)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder_2.compressedSize, sizeof(cDecoder_2.compressedSize)));
+
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder_1.originalSize, sizeof(cDecoder_1.originalSize)));
+            boost::asio::read(socket, boost::asio::buffer(&cDecoder_2.originalSize, sizeof(cDecoder_2.originalSize)));
+
+            // Читаем данные первого кадра
+            cDecoder_1.compressedData.resize(cDecoder_1.compressedSize);
+            boost::asio::read(socket, boost::asio::buffer(cDecoder_1.compressedData));
+
+            // Читаем данные второго кадра
+            cDecoder_2.compressedData.resize(cDecoder_2.compressedSize);
+            boost::asio::read(socket, boost::asio::buffer(cDecoder_2.compressedData));
+
+            t1 = std::chrono::steady_clock::now();  // После получения данных
+
+            cDecoder_1.outputFrame = cv::Mat(rows, cols, type1);
+            if (cDecoder_1.zstd_decompress_stream()) {
+                if ((currentFrame_1 % 30 == 0) && !prevFrame1.empty())
+                    cDecoder_1.outputFrame = frameAddiiton(cDecoder_1.outputFrame, prevFrame1);
+                prevFrame1 = cDecoder_1.outputFrame.clone();
+
+                cv::imshow("webcam1", cDecoder_1.outputFrame);
+            }
+
+            cDecoder_2.outputFrame = cv::Mat(rows, cols, type2);
+            if (cDecoder_2.zstd_decompress_stream()) {
+                if ((currentFrame_2 % 30 == 0) && !prevFrame2.empty())
+                    cDecoder_2.outputFrame = frameAddiiton(cDecoder_2.outputFrame, prevFrame2);
+                prevFrame2 = cDecoder_2.outputFrame.clone();
+
+                cv::imshow("webcam2", cDecoder_2.outputFrame);
+            }
+
+            t2 = std::chrono::steady_clock::now();  // После сжатия
+
+            std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                      << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
+                      << " uncompressed data: " << cDecoder_1.decompressedSize + cDecoder_2.decompressedSize
+                      << " compressed data: " << cDecoder_1.compressedSize + cDecoder_2.compressedSize << " koef: "
+                      << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
+                             static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
+                      << std::endl;
+            // Обязательно waitKey
+            if (cv::waitKey(1) == 27) {  // Нажал ESC
+                cv::destroyAllWindows();
+                break;
+            }
+        }
+    } catch (const std::exception &ex) {
+        std::cerr << "Error in receiving frame. Closing..." << ex.what() << std::endl;
         cv::destroyAllWindows();
     }
 }

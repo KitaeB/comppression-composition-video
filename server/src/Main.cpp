@@ -35,12 +35,12 @@ int main(int argc, char *argv[]) {
   while (true) {
     if (useVideo) {
       // Подключаем видео
-      cam1 = CameraState{"video/file_1.mp4"};
-      cam2 = CameraState{"video/file_2.mp4"};
+      cam1 = CameraState{"file_1.mp4"};
+      cam2 = CameraState{"file_2.mp4"};
     } else {
       // Подключаем камеры
-      cam1 = CameraState{0, cv::CAP_DSHOW};
-      cam2 = CameraState{1, cv::CAP_DSHOW};
+      cam1 = CameraState{0, cv::CAP_ANY};
+      cam2 = CameraState{1, cv::CAP_ANY};
     }
 
     int choice = 0;

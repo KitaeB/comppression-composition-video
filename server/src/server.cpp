@@ -92,7 +92,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -126,7 +126,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 continue;
             }
             // После получения
-            t1 = std::chrono::high_resolution_clock::now();
+            t1 = std::chrono::steady_clock::now();
 
             // производим соединение кадров
             cv::hconcat(frame1, frame2, frame);
@@ -137,12 +137,12 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 lz4Coder.acceleration++;
             else if (last_duration < 15 && lz4Coder.acceleration > 1)
                 lz4Coder.acceleration--;
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
 
             // Сожмём данные с lz4-fast
             if (lz4Coder.lz4_compress_fast(frame) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame.rows;
                 int cols = frame.cols;
@@ -163,7 +163,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 // Отправка данных клиенту
                 boost::asio::write(socket, boost::asio::buffer(lz4Coder.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
@@ -211,7 +211,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -245,7 +245,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
             }
 
             // После получения
-            t1 = std::chrono::high_resolution_clock::now();
+            t1 = std::chrono::steady_clock::now();
 
             // производим соединение кадров
             cv::hconcat(frame1, frame2, frame);
@@ -265,12 +265,12 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
             else if (last_duration < 15 && lz4Coder.acceleration > 1)
                 lz4Coder.acceleration--;
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
 
             // Сожмём данные с zlib-default
             if (lz4Coder.lz4_compress_fast(frame) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame.rows;
                 int cols = frame.cols;
@@ -289,7 +289,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
                 // Отправка данных клиенту
                 boost::asio::write(socket, boost::asio::buffer(lz4Coder.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
@@ -338,7 +338,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -379,12 +379,12 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                 lz4Coder1.acceleration--;
             lz4Coder2.acceleration = lz4Coder1.acceleration;
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
 
             // Сожмём данные с zlib-default
             if ((lz4Coder1.lz4_compress_fast(frame1) > 0) && (lz4Coder2.lz4_compress_fast(frame2) > 0)) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
                 int cols = frame1.cols;
@@ -412,7 +412,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                 // Отправка данных клиенту кадр 2
                 boost::asio::write(socket, boost::asio::buffer(lz4Coder2.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
@@ -462,7 +462,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -505,7 +505,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 lz4Coder1.acceleration--;
             lz4Coder2.acceleration = lz4Coder1.acceleration;
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
 
             tempFrame1 = frame1.clone();
@@ -525,7 +525,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
             // Сожмём данные с zlib-default
             if ((lz4Coder1.lz4_compress_fast(frame1) > 0) && (lz4Coder2.lz4_compress_fast(frame2) > 0)) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
                 int cols = frame1.cols;
@@ -562,7 +562,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 // Отправка данных клиенту кадр 2
                 boost::asio::write(socket, boost::asio::buffer(lz4Coder2.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
@@ -615,7 +615,7 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
     // основной цикл
     try {
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -650,17 +650,17 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             }
 
             // После получения
-            t1 = std::chrono::high_resolution_clock::now();
+            t1 = std::chrono::steady_clock::now();
             // производим соединение кадров
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и объединение
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
 
             // Сожмём данные с zlib-default
             if (zCoder.zlib_compress_stream(frame) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame.rows;
                 int cols = frame.cols;
@@ -677,7 +677,7 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
                 // Отправка данных клиенту
                 boost::asio::write(socket, boost::asio::buffer(zCoder.compressedData));
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
@@ -724,7 +724,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
     // основной цикл
     try {
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -759,13 +759,13 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
             }
 
             // После получения
-            t1 = std::chrono::high_resolution_clock::now();
+            t1 = std::chrono::steady_clock::now();
             // производим соединение кадров
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и объединение
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
 
             tempFrame = frame.clone();
             if ((currentFrame % 30) == 0 && !zCoder.inputFrame.empty()) frame = frameSubstraction(frame, prevFrame);
@@ -773,7 +773,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
 
             // Сожмём данные с zlib-default
             if (zCoder.zlib_compress_stream(frame) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame.rows;
                 int cols = frame.cols;
@@ -791,7 +791,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
 
                 // Отправка данных клиенту
                 boost::asio::write(socket, boost::asio::buffer(zCoder.compressedData));
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
@@ -838,7 +838,7 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -872,11 +872,11 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 continue;
             }
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
             // Сожмём данные с zlib-fast
             if ((zCoder_1.zlib_compress_stream(frame1) > 0) && (zCoder_2.zlib_compress_stream(frame2)) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
                 int cols = frame1.cols;
@@ -901,7 +901,7 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 // Отправка данных клиенту кадр 2
                 boost::asio::write(socket, boost::asio::buffer(zCoder_2.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
@@ -949,7 +949,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -983,7 +983,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 continue;
             }
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
             tempFrame_1 = frame1.clone();
             if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = frameSubstraction(frame1, prevFrame_1);
@@ -995,7 +995,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
             // Сожмём данные с zlib-fast
             if ((zCoder_1.zlib_compress_stream(frame1) > 0) && (zCoder_2.zlib_compress_stream(frame2)) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
                 int cols = frame1.cols;
@@ -1026,7 +1026,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 // Отправка данных клиенту кадр 2
                 boost::asio::write(socket, boost::asio::buffer(zCoder_2.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
@@ -1078,7 +1078,7 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
     // основной цикл
     try {
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -1113,17 +1113,17 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             }
 
             // После получения
-            t1 = std::chrono::high_resolution_clock::now();
+            t1 = std::chrono::steady_clock::now();
             // производим соединение кадров
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и объединение
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
 
             // Сожмём данные с zlib-default
             if (cCoder.zstd_compress(frame) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame.rows;
                 int cols = frame.cols;
@@ -1140,7 +1140,7 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
                 // Отправка данных клиенту
                 boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
@@ -1187,7 +1187,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
     // основной цикл
     try {
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -1222,13 +1222,13 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
             }
 
             // После получения
-            t1 = std::chrono::high_resolution_clock::now();
+            t1 = std::chrono::steady_clock::now();
             // производим соединение кадров
             cv::hconcat(frame1, frame2, frame);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и объединение
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
 
             tempFrame = frame.clone();
             if ((currentFrame % 30) == 0 && !cCoder.inputFrame.empty()) frame = frameSubstraction(frame, prevFrame);
@@ -1236,7 +1236,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
 
             // Сожмём данные с zlib-default
             if (cCoder.zstd_compress(frame) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame.rows;
                 int cols = frame.cols;
@@ -1254,7 +1254,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
 
                 // Отправка данных клиенту
                 boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
@@ -1301,7 +1301,7 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -1335,11 +1335,11 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 continue;
             }
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
             // Сожмём данные с zlib-fast
             if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
                 int cols = frame1.cols;
@@ -1364,7 +1364,7 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                 // Отправка данных клиенту кадр 2
                 boost::asio::write(socket, boost::asio::buffer(cCoder_2.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
@@ -1412,7 +1412,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
     try {
         // основной цикл
         while (true) {
-            t0 = std::chrono::high_resolution_clock::now();  // До получения картинки
+            t0 = std::chrono::steady_clock::now();  // До получения картинки
             // Читаем данные с камер
             bool hasNewFrame = false;
             {
@@ -1446,7 +1446,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 continue;
             }
 
-            t2 = std::chrono::high_resolution_clock::now();  // Изменение размера и
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                              // объединение
             tempFrame_1 = frame1.clone();
             if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = frameSubstraction(frame1, prevFrame_1);
@@ -1458,7 +1458,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
             // Сожмём данные с zlib-fast
             if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
-                t3 = std::chrono::high_resolution_clock::now();  // После сжатия
+                t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
                 int cols = frame1.cols;
@@ -1489,7 +1489,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 // Отправка данных клиенту кадр 2
                 boost::asio::write(socket, boost::asio::buffer(cCoder_2.compressedData));
 
-                t4 = std::chrono::high_resolution_clock::now();  // После передачи
+                t4 = std::chrono::steady_clock::now();  // После передачи
 
                 std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()

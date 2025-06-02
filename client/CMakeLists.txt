@@ -30,16 +30,14 @@ find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(lz4 REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(aom REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
 # Подключение зависимостей
 target_link_libraries(client-ccv PRIVATE
     ${OpenCV_LIBS}
     Boost::system
-    lz4::lz4
+    lz4
     ZLIB::ZLIB
-    unofficial::aom
     zstd::libzstd
 )
 

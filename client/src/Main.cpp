@@ -1,6 +1,7 @@
 #include "client.h"
 #include <iostream>
 #include <ostream>
+#include <thread>
 
 const int PORT = 9090;
 std::string HOST;

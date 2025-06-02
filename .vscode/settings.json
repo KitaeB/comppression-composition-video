@@ -94,7 +94,7 @@
         "unordered_set": "cpp",
         "valarray": "cpp"
     },
-    "cmake.sourceDirectory": "R:/Projects/3_Личные проекты/2_C/comppression-composition-video/server",
+    "cmake.sourceDirectory": "/home/administrator/repos/comppression-composition-video/server",
     "editor.formatOnPaste": false,
     "editor.formatOnType": false,
     "clangd.trace": ".clang-format",

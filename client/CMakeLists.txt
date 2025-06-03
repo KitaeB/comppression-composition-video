@@ -36,10 +36,16 @@ find_package(zstd CONFIG REQUIRED)
 target_link_libraries(client-ccv PRIVATE
     ${OpenCV_LIBS}
     Boost::system
-    lz4::lz4
     ZLIB::ZLIB
     zstd::libzstd
 )
+
+# Подключим библиотеку lz4
+if(WIN32)
+    target_link_libraries(client-ccv PRIVATE lz4::lz4)
+else()
+    target_link_libraries(client-ccv PRIVATE lz4 )
+endif()
 
 # Только для Windows — линковка с winsock
 if(WIN32)

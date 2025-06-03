@@ -35,15 +35,15 @@ int main(int argc, char *argv[]) {
   while (true) {
     if (useVideo) {
       // Подключаем видео
-      cam1 = CameraState{"video/file_1.mp4"};
-      cam2 = CameraState{"video/file_2.mp4"};
+      cam1 = CameraState{"video/file_1.mp4", width, height};
+      cam2 = CameraState{"video/file_2.mp4", width, height};
     } else {
       // Подключаем камеры
       // Кроссплатформенная инициализация камер
       #ifdef _WIN32
           // Windows — можно использовать DirectShow
-          cam1 = CameraState{0, cv::CAP_DSHOW};
-          cam2 = CameraState{1, cv::CAP_DSHOW};
+          cam1 = CameraState{0, cv::CAP_DSHOW, width, height};
+          cam2 = CameraState{1, cv::CAP_DSHOW, width, height};
       #else
           // Linux — предпочтительно V4L2
           cam1 = CameraState{0, cv::CAP_V4L2};

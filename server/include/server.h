@@ -34,8 +34,8 @@ struct CameraState {
     std::mutex frameMutex;
     std::atomic<bool> running{true};
 
-    int height = 720;
     int width = 1280;
+    int height = 720;
 
     std::string file;
     int currentFrame = 0;
@@ -43,10 +43,10 @@ struct CameraState {
     // Конструкторы
     CameraState() = default;
 
-    CameraState(const std::string &filename)
-        : file(filename), cap(filename) {}
+    CameraState(const std::string &filename, int exwidth, int exheight)
+        : file(filename), cap(filename), width(exwidth), height(exheight) {}
 
-    CameraState(uint index, uint apiPreference) {
+    CameraState(uint index, uint apiPreference, int exwidth, int exheight) : width(exwidth), height(exheight) {
         cap.open(index, apiPreference);
     }
 

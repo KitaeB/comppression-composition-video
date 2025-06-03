@@ -293,7 +293,7 @@ bool ZSTDCoder::zstd_compress(cv::Mat frame) {
 
     // Настройка параметров
     ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, 1);  // можно 1 для скорости
-    //ZSTD_CCtx_setParameter(cctx, ZSTD_c_nbWorkers, 4); // для многопоточности
+    ZSTD_CCtx_setParameter(cctx, ZSTD_c_nbWorkers, 4); // для многопоточности
 
     // Выделяем буфер
     size_t max_compressed_size = ZSTD_compressBound(originalSize);

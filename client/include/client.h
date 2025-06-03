@@ -34,4 +34,3 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket);
 void zstd_gray_noconcat_prime(tcp::socket &socket);
 
 /* ============================================================================================================ */
-

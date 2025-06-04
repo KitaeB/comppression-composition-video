@@ -11,9 +11,10 @@ void point(int num) { std::cout << "point " << num << std::endl; }
 
 cv::Mat frameAddiiton(const cv::Mat& diff, const cv::Mat& old_frame) {
     cv::Mat frame;
-    cv::add(old_frame, diff, frame, cv::noArray(), CV_8UC3);
+    cv::add(old_frame, diff, frame);  // Складываем
     return frame;
 }
+
 
 cv::Mat convertFromCleanDataChar(const std::vector<char>& data, int rows, int cols, int type) {
     // Создаём cv::Mat с указанными размерами и типом

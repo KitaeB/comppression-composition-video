@@ -51,11 +51,12 @@ int main(int argc, char *argv[]) {
       #else
           // Linux — предпочтительно V4L2
           cam1 = CameraState{0, cv::CAP_V4L2, width, height, useGausFilter};
-          cam2 = CameraState{1, cv::CAP_V4L2, width, height, useGausFilter};
+          cam2 = CameraState{2, cv::CAP_V4L2, width, height, useGausFilter};
       #endif
     }
 
     int choice = 0;
+
     // Цикл для реалиализации переподключения для сервера, в случае ошибки
     try {
       // Инициализируем новое подключение

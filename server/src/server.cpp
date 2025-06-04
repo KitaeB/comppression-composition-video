@@ -1,5 +1,3 @@
-#include <aom/aom_codec.h>
-
 #include <chrono>
 #include <iostream>
 #include <opencv2/core/types.hpp>
@@ -44,6 +42,8 @@ bool TcpServer::TestConnect() { return socket.is_open(); }
 
 // Функция захвата кадров для отдельной камеры
 void captureFrames(CameraState &camState, int camIndex) {
+    // Установка MJPG (важно для высокого разрешения)
+    camState.cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
     camState.cap.set(cv::CAP_PROP_FRAME_WIDTH, camState.width);
     camState.cap.set(cv::CAP_PROP_FRAME_HEIGHT, camState.height);
     camState.cap.set(cv::CAP_PROP_FPS, 30);

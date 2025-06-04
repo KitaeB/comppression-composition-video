@@ -28,7 +28,6 @@ endif()
 # Поиск библиотек через vcpkg
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
-find_package(lz4 REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(zstd CONFIG REQUIRED)
 
@@ -37,14 +36,17 @@ target_link_libraries(server-ccv PRIVATE
     ${OpenCV_LIBS}
     Boost::system
     ZLIB::ZLIB
-    zstd::libzstd
+    
 )
 
 # Подключим библиотеку lz4
 if(WIN32)
-    target_link_libraries(server-ccv PRIVATE lz4::lz4)
+    find_package(lz4 REQUIRED)
+    target_link_libraries(server-ccv PRIVATE lz4::lz4 zstd::libzstd)
 else()
-    target_link_libraries(server-ccv PRIVATE lz4 )
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
+    target_link_libraries(server-ccv PRIVATE lz4 zstd)
 endif()
 
 # Только для Windows — линковка с winsock

@@ -7,9 +7,6 @@
 
 #include <zstd.h>
 
-#include <aom/aom_decoder.h>
-#include <aom/aomdx.h>
-
 #include <vector>
 #include <opencv2/opencv.hpp>
 

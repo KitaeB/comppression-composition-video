@@ -23,7 +23,7 @@ int main() {
             socket.connect(tcp::endpoint(boost::asio::ip::make_address(HOST.c_str()), PORT), ec);
             int method = 0;
             if (ec) {
-                std::cerr << "Socket error: " << ec.what() << std::endl;
+                std::cerr << "Socket error: " << ec << std::endl;
                 continue;
             } else {
                 std::cout << "Connection complete." << std::endl;

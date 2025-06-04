@@ -33,9 +33,13 @@ struct CameraState {
     std::atomic<bool> frameReady{false};
     std::mutex frameMutex;
     std::atomic<bool> running{true};
+    std::chrono::steady_clock::time_point t;
+    long long timeToFrame;
 
     int width = 1280;
     int height = 720;
+
+    bool useFiltre = false;
 
     std::string file;
     int currentFrame = 0;
@@ -43,10 +47,10 @@ struct CameraState {
     // Конструкторы
     CameraState() = default;
 
-    CameraState(const std::string &filename, int exwidth, int exheight)
-        : file(filename), cap(filename), width(exwidth), height(exheight) {}
+    CameraState(const std::string &filename, int exwidth, int exheight, bool ugf)
+        : file(filename), cap(filename), width(exwidth), height(exheight), useFiltre(ugf) {}
 
-    CameraState(uint index, uint apiPreference, int exwidth, int exheight) : width(exwidth), height(exheight) {
+    CameraState(uint index, uint apiPreference, int exwidth, int exheight, bool ugf) : width(exwidth), height(exheight), useFiltre(ugf) {
         cap.open(index, apiPreference);
     }
 
@@ -62,6 +66,7 @@ struct CameraState {
           running(other.running.load()),
           height(other.height),
           width(other.width),
+          useFiltre(other.useFiltre),
           file(std::move(other.file)),
           currentFrame(other.currentFrame) {}
 
@@ -73,6 +78,7 @@ struct CameraState {
             running.store(other.running.load());
             height = other.height;
             width = other.width;
+            useFiltre= other.useFiltre,
             file = std::move(other.file);
             currentFrame = other.currentFrame;
         }

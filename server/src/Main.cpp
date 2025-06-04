@@ -2,6 +2,8 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
+#include <random>
+#include <string>
 
 #include "server.h"
 
@@ -12,7 +14,7 @@ int main(int argc, char *argv[]) {
   TcpServer server(9090);
 
   // Дополнительные параметры
-  bool useVideo = false;
+  bool useVideo = false, useGausFilter = false;
   int width = 1280;
   int height = 720;
 
@@ -27,6 +29,9 @@ int main(int argc, char *argv[]) {
         width = 1920;
         height = 1080;
 
+      } else if (std::string(argv[i]) == "-ugf") {
+        useGausFilter = true;
+
       } else {
         std::cout << "Uncertain variable." << std::endl;
       }
@@ -35,15 +40,15 @@ int main(int argc, char *argv[]) {
   while (true) {
     if (useVideo) {
       // Подключаем видео
-      cam1 = CameraState{"video/file_1.mp4", width, height};
-      cam2 = CameraState{"video/file_2.mp4", width, height};
+      cam1 = CameraState{"video/file_1.mp4", width, height, useGausFilter};
+      cam2 = CameraState{"video/file_2.mp4", width, height, useGausFilter};
     } else {
       // Подключаем камеры
       // Кроссплатформенная инициализация камер
       #ifdef _WIN32
           // Windows — можно использовать DirectShow
-          cam1 = CameraState{0, cv::CAP_DSHOW, width, height};
-          cam2 = CameraState{1, cv::CAP_DSHOW, width, height};
+          cam1 = CameraState{0, cv::CAP_DSHOW, width, height, useGausFilter};
+          cam2 = CameraState{1, cv::CAP_DSHOW, width, height, useGausFilter};
       #else
           // Linux — предпочтительно V4L2
           cam1 = CameraState{0, cv::CAP_V4L2};

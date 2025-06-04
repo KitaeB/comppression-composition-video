@@ -4,6 +4,7 @@
 #include <iostream>
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <ostream>
 #include <thread>
@@ -56,15 +57,25 @@ void captureFrames(CameraState &camState, int camIndex) {
     while (camState.running) {
         if (camState.cap.read(frame) && !frame.empty()) {
             std::lock_guard<std::mutex> lock(camState.frameMutex);
+
+            // Добавление гаус фильтра 3x3
+            if (camState.useFiltre)
+                cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
+
             camState.lastFrame = frame.clone();
             camState.frameReady = true;
-        } else if (!camState.cap.read(frame) && !camState.file.empty()) {
+
+            // Добавим определение времени захвата и на основании этого сможем частоту камеры получить.
+            camState.timeToFrame = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - camState.t).count();
+            camState.t = std::chrono::steady_clock::now();
+
+        } else if (!camState.cap.read(frame) && !camState.file.empty()) {   
             camState.cap.open(camState.file);
         } else {
             std::cerr << "Failed to capture frame from camera/video " << camIndex << std::endl;
         }
         // Небольшая задержка, чтобы не перегружать CPU
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 }
 
@@ -167,7 +178,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -295,7 +306,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -420,7 +431,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
@@ -572,7 +583,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
@@ -689,7 +700,7 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 boost::asio::write(socket, boost::asio::buffer(zCoder.compressedData));
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -806,7 +817,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                 boost::asio::write(socket, boost::asio::buffer(zCoder.compressedData));
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -917,7 +928,7 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
@@ -1043,7 +1054,7 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
@@ -1158,7 +1169,7 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -1274,7 +1285,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                 boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -1385,7 +1396,7 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
@@ -1511,7 +1522,7 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
@@ -1630,7 +1641,7 @@ void zstd_gray_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraStat
                 boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -1749,7 +1760,7 @@ void zstd_gray_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState 
                 boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -1864,7 +1875,7 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraSt
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()
@@ -1994,7 +2005,7 @@ void zstd_gray_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraStat
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
+                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t0).count()

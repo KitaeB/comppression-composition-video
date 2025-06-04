@@ -2,6 +2,7 @@
 #include "client.h"
 #include "decomression.h"
 
+#include <iostream>
 #include <opencv2/core/mat.hpp>
 #include <chrono>
 
@@ -200,7 +201,6 @@ void lz4_noconcat_prime(tcp::socket &socket) {
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder1.compressedSize, sizeof(lz4Decoder1.compressedSize)));
 
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder2.compressedSize, sizeof(lz4Decoder2.compressedSize)));
-
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder1.originalSize, sizeof(lz4Decoder1.originalSize)));
 
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder2.originalSize, sizeof(lz4Decoder2.originalSize)));
@@ -246,9 +246,9 @@ void lz4_noconcat_prime(tcp::socket &socket) {
                       << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                       << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
                       << " uncompressed data: " << lz4Decoder1.decompressedSize + lz4Decoder2.decompressedSize
-                      << " compressed data: " << lz4Decoder1.compressedSize + lz4Decoder1.compressedSize << " koef: "
+                      << " compressed data: " << lz4Decoder1.compressedSize + lz4Decoder2.compressedSize << " koef: "
                       << static_cast<double>(lz4Decoder1.decompressedSize + lz4Decoder2.decompressedSize) /
-                             static_cast<double>(lz4Decoder1.compressedSize + lz4Decoder1.compressedSize)
+                             static_cast<double>(lz4Decoder1.compressedSize + lz4Decoder2.compressedSize)
                       << std::endl;
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC

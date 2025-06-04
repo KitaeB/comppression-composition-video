@@ -35,7 +35,7 @@ public:
 
 private:
     LZ4_stream_t* lz4Stream = nullptr;
-    const int DICT_SIZE = 512 * 1024;
+    const int DICT_SIZE = 64 * 1024;
     std::vector<char> uncompressedData, dictBuffer;
 
     void convertToCleanDataChar();

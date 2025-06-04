@@ -77,8 +77,7 @@ LZ4Decoder::~LZ4Decoder() { LZ4_freeStreamDecode(decoder); }
 
 void LZ4Decoder::convertFromCleanDataChar() {
     // Проверяем, что размер данных соответствует ожидаемому
-    size_t expected_size = outputFrame.elemSize() * outputFrame.total();
-    if (decompressedData.size() != expected_size) {
+    if (decompressedData.size() != originalSize) {
         throw std::invalid_argument("Data size does not match expected Mat size");
     }
 
@@ -109,7 +108,7 @@ bool LZ4Decoder::lz4_decompress() {
     // Обновляем словарь: сохраняем последние 64 KB данных
     prevBlock.assign(decompressedData.data() + decompressedSize - std::min(decompressedSize, 64 * 1024),
                      decompressedData.data() + decompressedSize);
-
+    
     convertFromCleanDataChar();
     return decompressedSize > 0;
 }

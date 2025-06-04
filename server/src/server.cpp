@@ -529,15 +529,13 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
             tempFrame1 = frame1.clone();
             // cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
             if ((cam1.currentFrame % 30) > 0 && !prevFrame1.empty()) {
-                frame1 = frameSubstraction(frame1, prevFrame1);  // Производим
-                                                                 // вычитания
+                frame1 = frameSubstraction(frame1, prevFrame1);  // Производим вычитания
             }
             prevFrame1 = tempFrame1.clone();
 
             tempFrame2 = frame2.clone();
             if ((cam2.currentFrame % 30) > 0 && !prevFrame2.empty()) {
-                frame2 = frameSubstraction(frame2, prevFrame2);  // Производим
-                                                                 // вычитания
+                frame2 = frameSubstraction(frame2, prevFrame2);  // Производим вычитания
             }
             prevFrame2 = tempFrame2.clone();
 
@@ -565,6 +563,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
                 // Размер сжатых данных второго кадра
                 boost::asio::write(socket, boost::asio::buffer(&lz4Coder2.compressedSize, sizeof(lz4Coder2.compressedSize)));
+                std::cout << " compressed data: " << lz4Coder1.compressedSize + lz4Coder2.compressedSize << std::endl;
 
                 // Мы не можем считать, что исходные данные одинаковые по размеру,
                 // поскольку у нас один кадр может быть ключевым, а другой нет

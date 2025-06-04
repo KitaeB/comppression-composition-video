@@ -98,16 +98,16 @@ void LZ4Decoder::convertFromCleanDataChar() {
 
 bool LZ4Decoder::lz4_decompress() {
     // Устанавливаем словарь (если есть предыдущий блок)
-    if (!prevBlock.empty()) {
+    if (!prevBlock.empty()) 
         LZ4_setStreamDecode(decoder, prevBlock.data(), prevBlock.size());
-    }
+
     decompressedData.resize(originalSize);
 
     decompressedSize = LZ4_decompress_safe_continue(decoder, compressedData.data(), decompressedData.data(),
                                                     compressedData.size(), originalSize);
     if (decompressedSize <= 0) std::cerr << "Ошибка декомпрессии!" << std::endl;
     // Обновляем словарь: сохраняем последние 64 KB данных
-    prevBlock.assign(decompressedData.data() + decompressedSize - std::min(decompressedSize, 512 * 1024),
+    prevBlock.assign(decompressedData.data() + decompressedSize - std::min(decompressedSize, 64 * 1024),
                      decompressedData.data() + decompressedSize);
 
     convertFromCleanDataChar();

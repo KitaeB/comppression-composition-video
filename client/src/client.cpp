@@ -541,7 +541,7 @@ void zstd_concat_noprime(tcp::socket &socket) {
     ZSTDDecoder cDecoder = ZSTDDecoder();
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    point(11);
+    point(9);
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
@@ -597,7 +597,7 @@ void zstd_concat_prime(tcp::socket &socket) {
     ZSTDDecoder cDecoder = ZSTDDecoder();
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    point(6);
+    point(10);
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
@@ -659,7 +659,7 @@ void zstd_noconcat_noprime(tcp::socket &socket) {
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    std::cout << "point 10 " << std::endl;
+    point(11);
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
@@ -727,7 +727,7 @@ void zstd_noconcat_prime(tcp::socket &socket) {
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    std::cout << "point 7 " << std::endl;
+    point(12);
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных

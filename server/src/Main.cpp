@@ -2,7 +2,6 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
-#include <random>
 #include <string>
 
 #include "server.h"
@@ -51,8 +50,8 @@ int main(int argc, char *argv[]) {
           cam2 = CameraState{1, cv::CAP_DSHOW, width, height, useGausFilter};
       #else
           // Linux — предпочтительно V4L2
-          cam1 = CameraState{0, cv::CAP_V4L2};
-          cam2 = CameraState{1, cv::CAP_V4L2};
+          cam1 = CameraState{0, cv::CAP_V4L2, width, height, useGausFilter};
+          cam2 = CameraState{1, cv::CAP_V4L2, width, height, useGausFilter};
       #endif
     }
 

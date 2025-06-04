@@ -1,4 +1,5 @@
 #include "client.h"
+#include <boost/asio/read.hpp>
 #include <iostream>
 #include <ostream>
 #include <thread>
@@ -27,7 +28,7 @@ int main() {
             } else {
                 std::cout << "Connection complete." << std::endl;
             }
-
+            
             boost::asio::read(socket, boost::asio::buffer(&method, sizeof(method)));
             std::cout << "method: " << method << std::endl;
             switch (method) {

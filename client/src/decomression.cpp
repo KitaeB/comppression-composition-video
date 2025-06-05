@@ -15,7 +15,37 @@ cv::Mat frameAddiiton(const cv::Mat& diff, const cv::Mat& old_frame) {
     return frame;
 }
 
+void vector_add_chunk(const uchar* newData, const uchar* oldData, uchar* deltaData, size_t start, size_t end) {
+    for (size_t i = start; i < end ; ++i){
+        deltaData[i] = newData[i] + oldData[i];
+    }
+}
 
+cv::Mat MatAdd (const cv::Mat& new_frame, const cv::Mat& old_frame) {
+    cv::Mat delta = new_frame.clone();
+    const size_t frameSize = new_frame.total() * new_frame.elemSize();
+
+    // Определение количества потоков
+    const size_t num_threads = std::thread::hardware_concurrency();
+    const size_t chunk_size = std::max<size_t>(1, frameSize / num_threads);
+
+    // Векторы для хранения потоков
+    std::vector<std::thread> threads;
+    threads.reserve(4);
+
+    for (size_t i = 0; i < num_threads; ++i) {
+        size_t start = i * chunk_size;
+        size_t end = std::min(start + chunk_size, frameSize);
+
+        if (start > frameSize) break;
+
+        threads.emplace_back(vector_add_chunk, new_frame.data, old_frame.data, delta.data, start, end);
+    }
+    for (auto& t : threads)
+        t.join();
+
+    return delta;
+}
 cv::Mat convertFromCleanDataChar(const std::vector<char>& data, int rows, int cols, int type) {
     // Создаём cv::Mat с указанными размерами и типом
     cv::Mat frame(rows, cols, type);

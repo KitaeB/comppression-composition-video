@@ -18,6 +18,7 @@ cv::Mat convertFromCleanDataBytef(const std::vector<Bytef>& data, int rows, int 
 
 // Сложение кадров
 cv::Mat frameAddiiton(const cv::Mat& new_frame, const cv::Mat& old_frame);
+cv::Mat MatAdd (const cv::Mat& new_frame, const cv::Mat& old_frame);
 
 void point(int num);
 

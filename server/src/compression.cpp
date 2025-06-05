@@ -1,10 +1,14 @@
+#include <opencv2/core/hal/interface.h>
 #include <zconf.h>
 #include <zlib.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstring>
 #include <iostream>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
+#include <thread>
 #include <vector>
 
 #include "compression.h"
@@ -16,6 +20,38 @@ void point(int num) { std::cout << "point " << num << std::endl; }
 cv::Mat frameSubstraction(const cv::Mat& new_frame, const cv::Mat& old_frame) {
     cv::Mat delta;
     cv::subtract(new_frame, old_frame, delta, cv::noArray(), CV_16SC3);  // Сначала вычисляем в CV_16SC3
+
+    return delta;
+}
+
+void vector_sub_chunk(const uchar* newData, const uchar* oldData, uchar* deltaData, size_t start, size_t end) {
+    for (size_t i = start; i < end ; ++i){
+        deltaData[i] = newData[i] - oldData[i];
+    }
+}
+
+cv::Mat MatSub (const cv::Mat& new_frame, const cv::Mat& old_frame) {
+    cv::Mat delta = new_frame.clone();
+    const size_t frameSize = new_frame.total() * new_frame.elemSize();
+
+    // Определение количества потоков
+    const size_t num_threads = std::thread::hardware_concurrency();
+    const size_t chunk_size = std::max<size_t>(1, frameSize / num_threads);
+
+    // Векторы для хранения потоков
+    std::vector<std::thread> threads;
+    threads.reserve(4);
+
+    for (size_t i = 0; i < num_threads; ++i) {
+        size_t start = i * chunk_size;
+        size_t end = std::min(start + chunk_size, frameSize);
+
+        if (start > frameSize) break;
+
+    threads.emplace_back(vector_sub_chunk, new_frame.data, old_frame.data, delta.data, start, end);
+    }
+    for (auto& t : threads)
+        t.join();
 
     return delta;
 }

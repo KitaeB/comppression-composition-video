@@ -91,7 +91,7 @@ void lz4_concat_prime(tcp::socket &socket) {
             lz4Decoder.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder.lz4_decompress()) {
                 if ((currentFrame % 30) > 0 && !prevFrame.empty())
-                    lz4Decoder.outputFrame = frameAddiiton(lz4Decoder.outputFrame, prevFrame);
+                    lz4Decoder.outputFrame = MatAdd(lz4Decoder.outputFrame, prevFrame);
                 prevFrame = lz4Decoder.outputFrame.clone();
             }
             t2 = std::chrono::steady_clock::now();  // После сжатия
@@ -182,7 +182,7 @@ void lz4_noconcat_noprime(tcp::socket &socket) {
 }
 
 void lz4_noconcat_prime(tcp::socket &socket) {
-    int rows, cols, type1, type2;
+    int rows, cols, type;
     cv::Mat prevFrame1, prevFrame2;
     LZ4Decoder lz4Decoder1, lz4Decoder2;
 
@@ -195,15 +195,14 @@ void lz4_noconcat_prime(tcp::socket &socket) {
             // Читаем метаданные
             boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
             boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
-            boost::asio::read(socket, boost::asio::buffer(&type1, sizeof(type1)));
-            boost::asio::read(socket, boost::asio::buffer(&type2, sizeof(type2)));
+            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
 
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder1.compressedSize, sizeof(lz4Decoder1.compressedSize)));
 
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder2.compressedSize, sizeof(lz4Decoder2.compressedSize)));
-            boost::asio::read(socket, boost::asio::buffer(&lz4Decoder1.originalSize, sizeof(lz4Decoder1.originalSize)));
 
-            boost::asio::read(socket, boost::asio::buffer(&lz4Decoder2.originalSize, sizeof(lz4Decoder2.originalSize)));
+            boost::asio::read(socket, boost::asio::buffer(&lz4Decoder1.originalSize, sizeof(lz4Decoder1.originalSize)));
+            lz4Decoder2.originalSize = lz4Decoder1.originalSize;
 
             int currentFrame1;
             boost::asio::read(socket, boost::asio::buffer(&currentFrame1, sizeof(currentFrame1)));
@@ -221,18 +220,18 @@ void lz4_noconcat_prime(tcp::socket &socket) {
 
             t1 = std::chrono::steady_clock::now();  // После получения данных
 
-            lz4Decoder1.outputFrame = cv::Mat(rows, cols, type1);
+            lz4Decoder1.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder1.lz4_decompress()) {
                 if ((currentFrame1 % 30) > 0 && !prevFrame1.empty())
-                    lz4Decoder1.outputFrame = frameAddiiton(lz4Decoder1.outputFrame, prevFrame1);
+                    lz4Decoder1.outputFrame = MatAdd(lz4Decoder1.outputFrame, prevFrame1);
                 prevFrame1 = lz4Decoder1.outputFrame.clone();
                 cv::imshow("webcam1", lz4Decoder1.outputFrame);
             }
 
-            lz4Decoder2.outputFrame = cv::Mat(rows, cols, type2);
+            lz4Decoder2.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder2.lz4_decompress()) {
                 if ((currentFrame2 % 30) > 0 && !prevFrame2.empty())
-                    lz4Decoder2.outputFrame = frameAddiiton(lz4Decoder2.outputFrame, prevFrame2);
+                    lz4Decoder2.outputFrame = MatAdd(lz4Decoder2.outputFrame, prevFrame2);
                 prevFrame2 = lz4Decoder2.outputFrame.clone();
                 cv::imshow("webcam2", lz4Decoder2.outputFrame);
             }
@@ -354,7 +353,7 @@ void zlib_concat_prime(tcp::socket &socket) {
 
             if (zDecoder.zlib_decompress_stream()) {
                 if ((currentFrame % 30 == 0) && !prevFrame.empty())
-                    zDecoder.outputFrame = frameAddiiton(zDecoder.outputFrame, prevFrame);
+                    zDecoder.outputFrame = MatAdd(zDecoder.outputFrame, prevFrame);
                 prevFrame = zDecoder.outputFrame.clone();
 
                 cv::imshow("webcam", zDecoder.outputFrame);
@@ -451,7 +450,7 @@ void zlib_noconcat_noprime(tcp::socket &socket) {
 }
 
 void zlib_noconcat_prime(tcp::socket &socket) {
-    int rows, cols, type1, type2, currentFrame_1, currentFrame_2;
+    int rows, cols, type, currentFrame_1, currentFrame_2;
     cv::Mat prevFrame1, prevFrame2;
 
     // Декодер
@@ -466,8 +465,7 @@ void zlib_noconcat_prime(tcp::socket &socket) {
             // Читаем метаданные
             boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
             boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
-            boost::asio::read(socket, boost::asio::buffer(&type1, sizeof(type1)));
-            boost::asio::read(socket, boost::asio::buffer(&type2, sizeof(type2)));
+            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
 
             boost::asio::read(socket, boost::asio::buffer(&currentFrame_1, sizeof(currentFrame_1)));
             boost::asio::read(socket, boost::asio::buffer(&currentFrame_2, sizeof(currentFrame_2)));
@@ -477,7 +475,7 @@ void zlib_noconcat_prime(tcp::socket &socket) {
             boost::asio::read(socket, boost::asio::buffer(&zDecoder_2.compressedSize, sizeof(zDecoder_2.compressedSize)));
 
             boost::asio::read(socket, boost::asio::buffer(&zDecoder_1.originalSize, sizeof(zDecoder_1.originalSize)));
-            boost::asio::read(socket, boost::asio::buffer(&zDecoder_2.originalSize, sizeof(zDecoder_2.originalSize)));
+            zDecoder_2.originalSize = zDecoder_1.originalSize;
 
             // Читаем данные первого кадра
             zDecoder_1.compressedData.resize(zDecoder_1.compressedSize);
@@ -489,19 +487,19 @@ void zlib_noconcat_prime(tcp::socket &socket) {
 
             t1 = std::chrono::steady_clock::now();  // После получения данных
 
-            zDecoder_1.outputFrame = cv::Mat(rows, cols, type1);
+            zDecoder_1.outputFrame = cv::Mat(rows, cols, type);
             if (zDecoder_1.zlib_decompress_stream()) {
                 if ((currentFrame_1 % 30 == 0) && !prevFrame1.empty())
-                    zDecoder_1.outputFrame = frameAddiiton(zDecoder_1.outputFrame, prevFrame1);
+                    zDecoder_1.outputFrame = MatAdd(zDecoder_1.outputFrame, prevFrame1);
                 prevFrame1 = zDecoder_1.outputFrame.clone();
 
                 cv::imshow("webcam1", zDecoder_1.outputFrame);
             }
 
-            zDecoder_2.outputFrame = cv::Mat(rows, cols, type2);
+            zDecoder_2.outputFrame = cv::Mat(rows, cols, type);
             if (zDecoder_2.zlib_decompress_stream()) {
                 if ((currentFrame_2 % 30 == 0) && !prevFrame2.empty())
-                    zDecoder_2.outputFrame = frameAddiiton(zDecoder_2.outputFrame, prevFrame2);
+                    zDecoder_2.outputFrame = MatAdd(zDecoder_2.outputFrame, prevFrame2);
                 prevFrame2 = zDecoder_2.outputFrame.clone();
 
                 cv::imshow("webcam2", zDecoder_2.outputFrame);
@@ -622,7 +620,7 @@ void zstd_concat_prime(tcp::socket &socket) {
 
             if (cDecoder.zstd_decompress_stream()) {
                 if ((currentFrame % 30 == 0) && !prevFrame.empty())
-                    cDecoder.outputFrame = frameAddiiton(cDecoder.outputFrame, prevFrame);
+                    cDecoder.outputFrame = MatAdd(cDecoder.outputFrame, prevFrame);
                 prevFrame = cDecoder.outputFrame.clone();
 
                 cv::imshow("webcam", cDecoder.outputFrame);
@@ -719,7 +717,7 @@ void zstd_noconcat_noprime(tcp::socket &socket) {
 }
 
 void zstd_noconcat_prime(tcp::socket &socket) {
-    int rows, cols, type1, type2, currentFrame_1, currentFrame_2;
+    int rows, cols, type, currentFrame_1, currentFrame_2;
     cv::Mat prevFrame1, prevFrame2;
 
     // Декодер
@@ -734,8 +732,7 @@ void zstd_noconcat_prime(tcp::socket &socket) {
             // Читаем метаданные
             boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
             boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
-            boost::asio::read(socket, boost::asio::buffer(&type1, sizeof(type1)));
-            boost::asio::read(socket, boost::asio::buffer(&type2, sizeof(type2)));
+            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
 
             boost::asio::read(socket, boost::asio::buffer(&currentFrame_1, sizeof(currentFrame_1)));
             boost::asio::read(socket, boost::asio::buffer(&currentFrame_2, sizeof(currentFrame_2)));
@@ -745,7 +742,7 @@ void zstd_noconcat_prime(tcp::socket &socket) {
             boost::asio::read(socket, boost::asio::buffer(&cDecoder_2.compressedSize, sizeof(cDecoder_2.compressedSize)));
 
             boost::asio::read(socket, boost::asio::buffer(&cDecoder_1.originalSize, sizeof(cDecoder_1.originalSize)));
-            boost::asio::read(socket, boost::asio::buffer(&cDecoder_2.originalSize, sizeof(cDecoder_2.originalSize)));
+            cDecoder_2.originalSize = cDecoder_1.originalSize;
 
             // Читаем данные первого кадра
             cDecoder_1.compressedData.resize(cDecoder_1.compressedSize);
@@ -757,19 +754,19 @@ void zstd_noconcat_prime(tcp::socket &socket) {
 
             t1 = std::chrono::steady_clock::now();  // После получения данных
 
-            cDecoder_1.outputFrame = cv::Mat(rows, cols, type1);
+            cDecoder_1.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_1.zstd_decompress_stream()) {
                 if ((currentFrame_1 % 30 == 0) && !prevFrame1.empty())
-                    cDecoder_1.outputFrame = frameAddiiton(cDecoder_1.outputFrame, prevFrame1);
+                    cDecoder_1.outputFrame = MatAdd(cDecoder_1.outputFrame, prevFrame1);
                 prevFrame1 = cDecoder_1.outputFrame.clone();
 
                 cv::imshow("webcam1", cDecoder_1.outputFrame);
             }
 
-            cDecoder_2.outputFrame = cv::Mat(rows, cols, type2);
+            cDecoder_2.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_2.zstd_decompress_stream()) {
                 if ((currentFrame_2 % 30 == 0) && !prevFrame2.empty())
-                    cDecoder_2.outputFrame = frameAddiiton(cDecoder_2.outputFrame, prevFrame2);
+                    cDecoder_2.outputFrame = MatAdd(cDecoder_2.outputFrame, prevFrame2);
                 prevFrame2 = cDecoder_2.outputFrame.clone();
 
                 cv::imshow("webcam2", cDecoder_2.outputFrame);
@@ -809,7 +806,7 @@ void zstd_gray_concat_noprime(tcp::socket &socket) {
     ZSTDDecoder cDecoder = ZSTDDecoder();
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    point(11);
+    point(13);
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
@@ -865,7 +862,7 @@ void zstd_gray_concat_prime(tcp::socket &socket) {
     ZSTDDecoder cDecoder = ZSTDDecoder();
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    point(6);
+    point(14);
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
@@ -890,7 +887,7 @@ void zstd_gray_concat_prime(tcp::socket &socket) {
 
             if (cDecoder.zstd_decompress_stream()) {
                 if ((currentFrame % 30 == 0) && !prevFrame.empty())
-                    cDecoder.outputFrame = frameAddiiton(cDecoder.outputFrame, prevFrame);
+                    cDecoder.outputFrame = MatAdd(cDecoder.outputFrame, prevFrame);
                 prevFrame = cDecoder.outputFrame.clone();
 
                 cv::imshow("webcam", cDecoder.outputFrame);
@@ -927,7 +924,7 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket) {
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    std::cout << "point 10 " << std::endl;
+    std::cout << "point 15 " << std::endl;
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
@@ -987,7 +984,7 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket) {
 }
 
 void zstd_gray_noconcat_prime(tcp::socket &socket) {
-    int rows, cols, type1, type2, currentFrame_1, currentFrame_2;
+    int rows, cols, type, currentFrame_1, currentFrame_2;
     cv::Mat prevFrame1, prevFrame2;
 
     // Декодер
@@ -995,15 +992,14 @@ void zstd_gray_noconcat_prime(tcp::socket &socket) {
 
     // Объявим временные метки
     std::chrono::steady_clock::time_point t0, t1, t2, t3, t4;
-    std::cout << "point 7 " << std::endl;
+    std::cout << "point 16 " << std::endl;
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
             // Читаем метаданные
             boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
             boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
-            boost::asio::read(socket, boost::asio::buffer(&type1, sizeof(type1)));
-            boost::asio::read(socket, boost::asio::buffer(&type2, sizeof(type2)));
+            boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
 
             boost::asio::read(socket, boost::asio::buffer(&currentFrame_1, sizeof(currentFrame_1)));
             boost::asio::read(socket, boost::asio::buffer(&currentFrame_2, sizeof(currentFrame_2)));
@@ -1013,7 +1009,7 @@ void zstd_gray_noconcat_prime(tcp::socket &socket) {
             boost::asio::read(socket, boost::asio::buffer(&cDecoder_2.compressedSize, sizeof(cDecoder_2.compressedSize)));
 
             boost::asio::read(socket, boost::asio::buffer(&cDecoder_1.originalSize, sizeof(cDecoder_1.originalSize)));
-            boost::asio::read(socket, boost::asio::buffer(&cDecoder_2.originalSize, sizeof(cDecoder_2.originalSize)));
+            cDecoder_2.originalSize = cDecoder_1.originalSize;
 
             // Читаем данные первого кадра
             cDecoder_1.compressedData.resize(cDecoder_1.compressedSize);
@@ -1025,19 +1021,19 @@ void zstd_gray_noconcat_prime(tcp::socket &socket) {
 
             t1 = std::chrono::steady_clock::now();  // После получения данных
 
-            cDecoder_1.outputFrame = cv::Mat(rows, cols, type1);
+            cDecoder_1.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_1.zstd_decompress_stream()) {
                 if ((currentFrame_1 % 30 == 0) && !prevFrame1.empty())
-                    cDecoder_1.outputFrame = frameAddiiton(cDecoder_1.outputFrame, prevFrame1);
+                    cDecoder_1.outputFrame = MatAdd(cDecoder_1.outputFrame, prevFrame1);
                 prevFrame1 = cDecoder_1.outputFrame.clone();
 
                 cv::imshow("webcam1", cDecoder_1.outputFrame);
             }
 
-            cDecoder_2.outputFrame = cv::Mat(rows, cols, type2);
+            cDecoder_2.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_2.zstd_decompress_stream()) {
                 if ((currentFrame_2 % 30 == 0) && !prevFrame2.empty())
-                    cDecoder_2.outputFrame = frameAddiiton(cDecoder_2.outputFrame, prevFrame2);
+                    cDecoder_2.outputFrame = MatAdd(cDecoder_2.outputFrame, prevFrame2);
                 prevFrame2 = cDecoder_2.outputFrame.clone();
 
                 cv::imshow("webcam2", cDecoder_2.outputFrame);

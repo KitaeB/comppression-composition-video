@@ -14,6 +14,9 @@
 /* ============================================================================================================ */
 // Общие методы для работы с изорбражениями
 cv::Mat frameSubstraction(const cv::Mat& frame, const cv::Mat& old_frame);
+cv::Mat MatSub (const cv::Mat& new_frame, const cv::Mat& old_frame);
+
+
 void convertToCleanDataBytef(const cv::Mat& frame, std::vector<Bytef>& data);
 void point(int num);
 /* ============================================================================================================ */

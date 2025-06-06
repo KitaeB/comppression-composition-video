@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/opencv.hpp>
@@ -47,6 +48,8 @@ void captureFrames(CameraState &camState, int camIndex) {
 #else
     camState.cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
 #endif
+    camState.cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+
     camState.cap.set(cv::CAP_PROP_FRAME_WIDTH, camState.width);
     camState.cap.set(cv::CAP_PROP_FRAME_HEIGHT, camState.height);
     if (!camState.cap.isOpened()) {
@@ -73,6 +76,7 @@ void captureFrames(CameraState &camState, int camIndex) {
 
         } else if (!camState.cap.read(frame) && !camState.file.empty()) {
             camState.cap.open(camState.file);
+            std::cerr << "file is end " << camIndex << std::endl;
         } else {
             std::cerr << "Failed to capture frame from camera/video " << camIndex << std::endl;
         }
@@ -135,7 +139,7 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
             // После получения
@@ -256,7 +260,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
             }
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -386,7 +390,7 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
@@ -514,7 +518,7 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
@@ -529,15 +533,15 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                                                     // объединение
 
             tempFrame1 = frame1.clone();
-            if ((cam1.currentFrame % 10) > 0 && !prevFrame1.empty()) frame1 = MatSub(frame1, prevFrame1);  // Производим вычитания
-            prevFrame1 = tempFrame1.clone();
+            if ((cam1.currentFrame % 10) > 0 && !prevFrame1.empty()) tempFrame1 = MatSub(frame1, prevFrame1);  // Производим вычитания
+            prevFrame1 = frame1.clone();
 
             tempFrame2 = frame2.clone();
-            if ((cam2.currentFrame % 10) > 0 && !prevFrame2.empty()) frame2 = MatSub(frame2, prevFrame2);  // Производим вычитания
-            prevFrame2 = tempFrame2.clone();
+            if ((cam2.currentFrame % 10) > 0 && !prevFrame2.empty()) tempFrame2 = MatSub(frame2, prevFrame2);  // Производим вычитания
+            prevFrame2 = frame2.clone();
 
             // Сожмём данные с zlib-default
-            if ((lz4Coder1.lz4_compress_fast(frame1) > 0) && (lz4Coder2.lz4_compress_fast(frame2) > 0)) {
+            if ((lz4Coder1.lz4_compress_fast(tempFrame1) > 0) && (lz4Coder2.lz4_compress_fast(tempFrame2) > 0)) {
                 t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
@@ -650,7 +654,7 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -761,7 +765,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -878,7 +882,7 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -990,22 +994,22 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                     // объединение
             tempFrame_1 = frame1.clone();
-            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
-            prevFrame_1 = tempFrame_1.clone();
+            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) tempFrame_1 = MatSub(frame1, prevFrame_1);
+            prevFrame_1 = frame1.clone();
 
             tempFrame_2 = frame2.clone();
-            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
-            prevFrame_2 = tempFrame_2.clone();
+            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) tempFrame_2 = MatSub(frame2, prevFrame_2);
+            prevFrame_2 = frame2.clone();
 
             // Сожмём данные с zlib-fast
-            if ((zCoder_1.zlib_compress_stream(frame1) > 0) && (zCoder_2.zlib_compress_stream(frame2)) > 0) {
+            if ((zCoder_1.zlib_compress_stream(tempFrame_1) > 0) && (zCoder_2.zlib_compress_stream(tempFrame_2)) > 0) {
                 t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
@@ -1116,7 +1120,7 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -1227,7 +1231,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -1343,7 +1347,7 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -1455,22 +1459,22 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                     // объединение
             tempFrame_1 = frame1.clone();
-            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
-            prevFrame_1 = tempFrame_1.clone();
+            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) tempFrame_1 = MatSub(frame1, prevFrame_1);
+            prevFrame_1 = frame1.clone();
 
             tempFrame_2 = frame2.clone();
-            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
-            prevFrame_2 = tempFrame_2.clone();
+            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) tempFrame_2 = MatSub(frame2, prevFrame_2);
+            prevFrame_2 = frame2.clone();
 
             // Сожмём данные с zlib-fast
-            if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
+            if ((cCoder_1.zstd_compress(tempFrame_1) > 0) && (cCoder_2.zstd_compress(tempFrame_2)) > 0) {
                 t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
@@ -1582,7 +1586,7 @@ void zstd_gray_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraStat
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -1695,7 +1699,7 @@ void zstd_gray_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState 
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -1813,7 +1817,7 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraSt
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -1927,7 +1931,7 @@ void zstd_gray_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraStat
 
             if (!hasNewFrame) {
                 // Если нет новых кадров, ждем немного
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                std::this_thread::sleep_for(std::chrono::milliseconds(2));
                 continue;
             }
 
@@ -1936,15 +1940,15 @@ void zstd_gray_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraStat
             if (frame2.channels() == 3) cv::cvtColor(frame2, frame2, cv::COLOR_BGR2GRAY);
 
             tempFrame_1 = frame1.clone();
-            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
-            prevFrame_1 = tempFrame_1.clone();
+            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) tempFrame_1 = MatSub(frame1, prevFrame_1);
+            prevFrame_1 = frame1.clone();
 
             tempFrame_2 = frame2.clone();
-            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
-            prevFrame_2 = tempFrame_2.clone();
+            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) tempFrame_2 = MatSub(frame2, prevFrame_2);
+            prevFrame_2 = frame2.clone();
 
             // Сожмём данные с zlib-fast
-            if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
+            if ((cCoder_1.zstd_compress(tempFrame_1) > 0) && (cCoder_2.zstd_compress(tempFrame_2)) > 0) {
                 t3 = std::chrono::steady_clock::now();  // После сжатия
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;

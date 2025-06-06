@@ -761,18 +761,16 @@ void zstd_noconcat_prime(tcp::socket &socket) {
                 if ((currentFrame_1 % 10 == 0) && !prevFrame1.empty())
                     cDecoder_1.outputFrame = MatAdd(cDecoder_1.outputFrame, prevFrame1);
                 prevFrame1 = cDecoder_1.outputFrame.clone();
-
-                cv::imshow("webcam1", cDecoder_1.outputFrame);
-            }
+            } else continue;
 
             cDecoder_2.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_2.zstd_decompress_stream()) {
                 if ((currentFrame_2 % 10 == 0) && !prevFrame2.empty())
                     cDecoder_2.outputFrame = MatAdd(cDecoder_2.outputFrame, prevFrame2);
                 prevFrame2 = cDecoder_2.outputFrame.clone();
-
-                cv::imshow("webcam2", cDecoder_2.outputFrame);
-            }
+            } else continue;
+            cv::imshow("webcam1", cDecoder_1.outputFrame);
+            cv::imshow("webcam2", cDecoder_2.outputFrame);
 
             t2 = std::chrono::steady_clock::now();  // После сжатия
 

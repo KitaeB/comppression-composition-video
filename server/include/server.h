@@ -51,6 +51,7 @@ struct CameraState {
         : file(filename), cap(filename), width(exwidth), height(exheight), useFiltre(ugf) {}
 
     CameraState(uint index, uint apiPreference, int exwidth, int exheight, bool ugf) : width(exwidth), height(exheight), useFiltre(ugf) {
+        cap.release();
         cap.open(index, apiPreference);
     }
 

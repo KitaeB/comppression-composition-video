@@ -17,7 +17,7 @@ cv::Mat frameAddiiton(const cv::Mat& diff, const cv::Mat& old_frame) {
 
 void vector_add_chunk(const uchar* newData, const uchar* oldData, uchar* deltaData, size_t start, size_t end) {
     for (size_t i = start; i < end ; ++i){
-        deltaData[i] = newData[i] + oldData[i];
+        deltaData[i] = newData[i] + oldData[i] - 127;
     }
 }
 

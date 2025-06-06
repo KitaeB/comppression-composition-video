@@ -35,6 +35,7 @@ public:
 
     // Методы сжатия LZ4
     int lz4_compress_fast(cv::Mat& frame);
+    int lz4_compress_fast_dict(cv::Mat& frame);
 
 private:
     LZ4_stream_t* lz4Stream = nullptr;

@@ -37,6 +37,7 @@ public:
 
     // Метод декомпрессии
     bool lz4_decompress();
+    bool lz4_decompress_dict();
 
 private:
     LZ4_streamDecode_t* decoder = LZ4_createStreamDecode();

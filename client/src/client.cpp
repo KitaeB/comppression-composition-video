@@ -3,8 +3,10 @@
 #include "decomression.h"
 
 #include <iostream>
+#include <opencv2/core.hpp>
 #include <opencv2/core/mat.hpp>
 #include <chrono>
+#include <opencv2/highgui.hpp>
 
 #pragma region lz4
 
@@ -182,8 +184,8 @@ void lz4_noconcat_noprime(tcp::socket &socket) {
 }
 
 void lz4_noconcat_prime(tcp::socket &socket) {
-    int rows, cols, type;
-    cv::Mat prevFrame1, prevFrame2;
+    int rows, cols, type, currentFrame1, currentFrame2;
+    cv::Mat prevFrame1, prevFrame2, concat;
     LZ4Decoder lz4Decoder1, lz4Decoder2;
 
     // Объявим временные метки
@@ -192,10 +194,15 @@ void lz4_noconcat_prime(tcp::socket &socket) {
     try {
         while (true) {
             t0 = std::chrono::steady_clock::now();  // До получения данных
+            
             // Читаем метаданные
             boost::asio::read(socket, boost::asio::buffer(&rows, sizeof(rows)));
             boost::asio::read(socket, boost::asio::buffer(&cols, sizeof(cols)));
             boost::asio::read(socket, boost::asio::buffer(&type, sizeof(type)));
+
+            boost::asio::read(socket, boost::asio::buffer(&currentFrame1, sizeof(currentFrame1)));
+
+            boost::asio::read(socket, boost::asio::buffer(&currentFrame2, sizeof(currentFrame2)));
 
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder1.compressedSize, sizeof(lz4Decoder1.compressedSize)));
 
@@ -203,12 +210,6 @@ void lz4_noconcat_prime(tcp::socket &socket) {
 
             boost::asio::read(socket, boost::asio::buffer(&lz4Decoder1.originalSize, sizeof(lz4Decoder1.originalSize)));
             lz4Decoder2.originalSize = lz4Decoder1.originalSize;
-
-            int currentFrame1;
-            boost::asio::read(socket, boost::asio::buffer(&currentFrame1, sizeof(currentFrame1)));
-
-            int currentFrame2;
-            boost::asio::read(socket, boost::asio::buffer(&currentFrame2, sizeof(currentFrame2)));
 
             // Читаем данные первого кадра
             lz4Decoder1.compressedData.resize(lz4Decoder1.compressedSize);
@@ -223,20 +224,21 @@ void lz4_noconcat_prime(tcp::socket &socket) {
             lz4Decoder1.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder1.lz4_decompress()) {
                 if ((currentFrame1 % 10) > 0 && !prevFrame1.empty())
-                    lz4Decoder1.outputFrame = MatAdd(lz4Decoder1.outputFrame, prevFrame1);
+                    lz4Decoder1.outputFrame = MatAdd(prevFrame1, lz4Decoder1.outputFrame);
                 prevFrame1 = lz4Decoder1.outputFrame.clone();
-                cv::imshow("webcam1", lz4Decoder1.outputFrame);
+                cv::imshow("web1", lz4Decoder1.outputFrame);
             }
 
             lz4Decoder2.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder2.lz4_decompress()) {
                 if ((currentFrame2 % 10) > 0 && !prevFrame2.empty())
-                    lz4Decoder2.outputFrame = MatAdd(lz4Decoder2.outputFrame, prevFrame2);
+                    lz4Decoder2.outputFrame = MatAdd(prevFrame2, lz4Decoder2.outputFrame);
                 prevFrame2 = lz4Decoder2.outputFrame.clone();
-                cv::imshow("webcam2", lz4Decoder2.outputFrame);
+                cv::imshow("web2", lz4Decoder2.outputFrame);
             }
 
             t2 = std::chrono::steady_clock::now();  // После сжатия
+
 
             t3 = std::chrono::steady_clock::now();  // После отображения
 

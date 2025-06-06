@@ -529,16 +529,11 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                                                     // объединение
 
             tempFrame1 = frame1.clone();
-
-            if ((cam1.currentFrame % 10) > 0 && !prevFrame1.empty()) {
-                frame1 = MatSub(frame1, prevFrame1);  // Производим вычитания
-            }
+            if ((cam1.currentFrame % 10) > 0 && !prevFrame1.empty()) frame1 = MatSub(frame1, prevFrame1);  // Производим вычитания
             prevFrame1 = tempFrame1.clone();
 
             tempFrame2 = frame2.clone();
-            if ((cam2.currentFrame % 10) > 0 && !prevFrame2.empty()) {
-                frame2 = MatSub(frame2, prevFrame2);  // Производим вычитания
-            }
+            if ((cam2.currentFrame % 10) > 0 && !prevFrame2.empty()) frame2 = MatSub(frame2, prevFrame2);  // Производим вычитания
             prevFrame2 = tempFrame2.clone();
 
             // Сожмём данные с zlib-default
@@ -554,6 +549,10 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
                 boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
 
+                // Также надо отправить данные о том у нас кадр ключеввой или нет
+                boost::asio::write(socket, boost::asio::buffer(&cam1.currentFrame, sizeof(cam1.currentFrame)));
+                boost::asio::write(socket, boost::asio::buffer(&cam2.currentFrame, sizeof(cam2.currentFrame)));
+
                 // Размер сжатых данных первого кадра
                 boost::asio::write(socket, boost::asio::buffer(&lz4Coder1.compressedSize, sizeof(lz4Coder1.compressedSize)));
 
@@ -562,10 +561,6 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
                 // Мы не можем считать, что исходные данные одинаковые по размеру
                 boost::asio::write(socket, boost::asio::buffer(&lz4Coder1.uncompressedSize, sizeof(lz4Coder1.uncompressedSize)));
-
-                // Также надо отправить данные о том у нас кадр ключеввой или нет
-                boost::asio::write(socket, boost::asio::buffer(&cam1.currentFrame, sizeof(cam1.currentFrame)));
-                boost::asio::write(socket, boost::asio::buffer(&cam2.currentFrame, sizeof(cam2.currentFrame)));
 
                 // Отправка данных клиенту кадр 1
                 boost::asio::write(socket, boost::asio::buffer(lz4Coder1.compressedData));

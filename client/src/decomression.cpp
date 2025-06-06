@@ -26,12 +26,11 @@ cv::Mat MatAdd (const cv::Mat& new_frame, const cv::Mat& old_frame) {
     const size_t frameSize = new_frame.total() * new_frame.elemSize();
 
     // Определение количества потоков
-    const size_t num_threads = std::thread::hardware_concurrency();
+    const size_t num_threads = std::min<size_t>(4, std::thread::hardware_concurrency());
     const size_t chunk_size = std::max<size_t>(1, frameSize / num_threads);
-
     // Векторы для хранения потоков
     std::vector<std::thread> threads;
-    threads.reserve(4);
+    threads.reserve(num_threads);
 
     for (size_t i = 0; i < num_threads; ++i) {
         size_t start = i * chunk_size;
@@ -46,6 +45,7 @@ cv::Mat MatAdd (const cv::Mat& new_frame, const cv::Mat& old_frame) {
 
     return delta;
 }
+
 cv::Mat convertFromCleanDataChar(const std::vector<char>& data, int rows, int cols, int type) {
     // Создаём cv::Mat с указанными размерами и типом
     cv::Mat frame(rows, cols, type);
@@ -126,20 +126,29 @@ void LZ4Decoder::convertFromCleanDataChar() {
     }
 }
 
-bool LZ4Decoder::lz4_decompress() {
+bool LZ4Decoder::lz4_decompress_dict() {
     // Устанавливаем словарь (если есть предыдущий блок)
     if (!prevBlock.empty()) 
         LZ4_setStreamDecode(decoder, prevBlock.data(), prevBlock.size());
 
     decompressedData.resize(originalSize);
 
-    decompressedSize = LZ4_decompress_safe_continue(decoder, compressedData.data(), decompressedData.data(),
-                                                    compressedData.size(), originalSize);
-    if (decompressedSize <= 0) std::cerr << "Ошибка декомпрессии!" << std::endl;
+    decompressedSize = LZ4_decompress_safe_continue(decoder, compressedData.data(), decompressedData.data(), compressedSize, originalSize);
+    if (decompressedSize <= 0) {std::cerr << "Ошибка декомпрессии!" << std::endl; return false;}
     // Обновляем словарь: сохраняем последние 64 KB данных
-    prevBlock.assign(decompressedData.data() + decompressedSize - std::min(decompressedSize, 64 * 1024),
-                     decompressedData.data() + decompressedSize);
+    prevBlock.assign(decompressedData.data() + decompressedSize - std::min(decompressedSize, 64 * 1024), decompressedData.data() + decompressedSize);
     
+    convertFromCleanDataChar();
+    return decompressedSize > 0;
+}
+
+bool LZ4Decoder::lz4_decompress() {
+    decompressedData.resize(originalSize);
+    decompressedSize = LZ4_decompress_safe(compressedData.data(), decompressedData.data(), compressedSize, originalSize);
+    if (decompressedSize <= 0) {
+        std::cerr << "Ошибка декомпрессии!" << std::endl;
+        return false;
+    }
     convertFromCleanDataChar();
     return decompressedSize > 0;
 }

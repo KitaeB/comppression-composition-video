@@ -35,12 +35,12 @@ cv::Mat MatSub (const cv::Mat& new_frame, const cv::Mat& old_frame) {
     const size_t frameSize = new_frame.total() * new_frame.elemSize();
 
     // Определение количества потоков
-    const size_t num_threads = std::thread::hardware_concurrency();
+    const size_t num_threads = std::min<size_t>(4, std::thread::hardware_concurrency());
     const size_t chunk_size = std::max<size_t>(1, frameSize / num_threads);
 
     // Векторы для хранения потоков
     std::vector<std::thread> threads;
-    threads.reserve(4);
+    threads.reserve(num_threads);
 
     for (size_t i = 0; i < num_threads; ++i) {
         size_t start = i * chunk_size;
@@ -99,7 +99,7 @@ void LZ4Coder::convertToCleanDataChar() {
     uncompressedSize = uncompressedData.size();
 }
 
-int LZ4Coder::lz4_compress_fast(cv::Mat& frame) {
+int LZ4Coder::lz4_compress_fast_dict(cv::Mat& frame) {
     inputFrame = frame.clone();
     uncompressedSize = inputFrame.elemSize() * inputFrame.total();
 
@@ -114,6 +114,26 @@ int LZ4Coder::lz4_compress_fast(cv::Mat& frame) {
     LZ4_saveDict(lz4Stream, dictBuffer.data(), dictBuffer.size());
 
     // Проверяем успешность сжатия
+    if (compressedSize <= 0) {
+        std::cerr << "LZ4 compression failed!" << std::endl;
+        compressedData.clear();
+        return 0;
+    }
+    // Изменяем размер вектора
+    compressedData.resize(this->compressedSize);
+    // Возвращаем размер сжатых данных
+    return compressedSize;
+}
+
+int LZ4Coder::lz4_compress_fast(cv::Mat& frame) {
+    inputFrame = frame.clone();
+    uncompressedSize = inputFrame.elemSize() * inputFrame.total();
+
+    // Изменяем размер вектора сжатых данных
+    compressedData.resize(LZ4_compressBound(uncompressedSize));
+
+    compressedSize = LZ4_compress_fast((const char*) inputFrame.data, compressedData.data(), uncompressedSize, compressedData.size(), acceleration);
+
     if (compressedSize <= 0) {
         std::cerr << "LZ4 compression failed!" << std::endl;
         compressedData.clear();

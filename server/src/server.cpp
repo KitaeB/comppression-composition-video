@@ -42,11 +42,13 @@ bool TcpServer::TestConnect() { return socket.is_open(); }
 
 // Функция захвата кадров для отдельной камеры
 void captureFrames(CameraState &camState, int camIndex) {
-    // Установка MJPG (важно для высокого разрешения)
+// Установка MJPG (важно для высокого разрешения)
+#ifdef _WIN32
+#else
     camState.cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+#endif
     camState.cap.set(cv::CAP_PROP_FRAME_WIDTH, camState.width);
     camState.cap.set(cv::CAP_PROP_FRAME_HEIGHT, camState.height);
-    camState.cap.set(cv::CAP_PROP_FPS, 30);
     if (!camState.cap.isOpened()) {
         std::cerr << "Failed to open camera " << camIndex << std::endl;
         camState.running = false;
@@ -59,17 +61,17 @@ void captureFrames(CameraState &camState, int camIndex) {
             std::lock_guard<std::mutex> lock(camState.frameMutex);
 
             // Добавление гаус фильтра 3x3
-            if (camState.useFiltre)
-                cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
+            if (camState.useFiltre) cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
 
             camState.lastFrame = frame.clone();
             camState.frameReady = true;
 
             // Добавим определение времени захвата и на основании этого сможем частоту камеры получить.
-            camState.timeToFrame = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - camState.t).count();
+            camState.timeToFrame =
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - camState.t).count();
             camState.t = std::chrono::steady_clock::now();
 
-        } else if (!camState.cap.read(frame) && !camState.file.empty()) {   
+        } else if (!camState.cap.read(frame) && !camState.file.empty()) {
             camState.cap.open(camState.file);
         } else {
             std::cerr << "Failed to capture frame from camera/video " << camIndex << std::endl;
@@ -268,7 +270,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
             // cv::GaussianBlur(frame, frame, cv::Size(3, 3), 0);
             tempFrame = frame.clone();
 
-            if ((currentFrame % 30) > 0 && !prevFrame.empty()) {
+            if ((currentFrame % 10) > 0 && !prevFrame.empty()) {
                 frame = MatSub(frame, prevFrame);  // Производим вычитания
             }
 
@@ -528,13 +530,13 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
 
             tempFrame1 = frame1.clone();
 
-            if ((cam1.currentFrame % 30) > 0 && !prevFrame1.empty()) {
+            if ((cam1.currentFrame % 10) > 0 && !prevFrame1.empty()) {
                 frame1 = MatSub(frame1, prevFrame1);  // Производим вычитания
             }
             prevFrame1 = tempFrame1.clone();
 
             tempFrame2 = frame2.clone();
-            if ((cam2.currentFrame % 30) > 0 && !prevFrame2.empty()) {
+            if ((cam2.currentFrame % 10) > 0 && !prevFrame2.empty()) {
                 frame2 = MatSub(frame2, prevFrame2);  // Производим вычитания
             }
             prevFrame2 = tempFrame2.clone();
@@ -545,12 +547,12 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 // Объявим метаданные передаваеммого кадра
                 int rows = frame1.rows;
                 int cols = frame1.cols;
-                int type1 = frame1.type();
+                int type = frame1.type();
 
                 // Передаём метаданные по сокету
                 boost::asio::write(socket, boost::asio::buffer(&rows, sizeof(rows)));
                 boost::asio::write(socket, boost::asio::buffer(&cols, sizeof(cols)));
-                boost::asio::write(socket, boost::asio::buffer(&type1, sizeof(type1)));
+                boost::asio::write(socket, boost::asio::buffer(&type, sizeof(type)));
 
                 // Размер сжатых данных первого кадра
                 boost::asio::write(socket, boost::asio::buffer(&lz4Coder1.compressedSize, sizeof(lz4Coder1.compressedSize)));
@@ -571,7 +573,6 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                 boost::asio::write(socket, boost::asio::buffer(lz4Coder2.compressedData));
 
                 t4 = std::chrono::steady_clock::now();  // После передачи
-
                 std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
@@ -781,7 +782,7 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
             t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
 
             tempFrame = frame.clone();
-            if ((currentFrame % 30) == 0 && !zCoder.inputFrame.empty()) frame = MatSub(frame, prevFrame);
+            if ((currentFrame % 10) == 0 && !zCoder.inputFrame.empty()) frame = MatSub(frame, prevFrame);
             prevFrame = tempFrame.clone();
 
             // Сожмём данные с zlib-default
@@ -1001,11 +1002,11 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                     // объединение
             tempFrame_1 = frame1.clone();
-            if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
+            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
             prevFrame_1 = tempFrame_1.clone();
 
             tempFrame_2 = frame2.clone();
-            if ((cam2.currentFrame % 30) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
+            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
             prevFrame_2 = tempFrame_2.clone();
 
             // Сожмём данные с zlib-fast
@@ -1246,7 +1247,7 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
             t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
 
             tempFrame = frame.clone();
-            if ((currentFrame % 30) == 0 && !cCoder.inputFrame.empty()) frame = MatSub(frame, prevFrame);
+            if ((currentFrame % 10) == 0 && !cCoder.inputFrame.empty()) frame = MatSub(frame, prevFrame);
             prevFrame = tempFrame.clone();
 
             // Сожмём данные с zlib-default
@@ -1466,11 +1467,11 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
             t2 = std::chrono::steady_clock::now();  // Изменение размера и
                                                     // объединение
             tempFrame_1 = frame1.clone();
-            if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
+            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
             prevFrame_1 = tempFrame_1.clone();
 
             tempFrame_2 = frame2.clone();
-            if ((cam2.currentFrame % 30) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
+            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
             prevFrame_2 = tempFrame_2.clone();
 
             // Сожмём данные с zlib-fast
@@ -1596,8 +1597,7 @@ void zstd_gray_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraStat
             cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
-            if (frame.channels() == 3)
-                cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+            if (frame.channels() == 3) cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
@@ -1710,15 +1710,14 @@ void zstd_gray_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState 
             cv::resize(frame2, frame2, frame1.size());
             cv::hconcat(frame1, frame2, frame);
 
-            if (frame.channels() == 3)
-                cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+            if (frame.channels() == 3) cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
 
             auto last_duration = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
 
             tempFrame = frame.clone();
-            if ((currentFrame % 30) == 0 && !cCoder.inputFrame.empty()) frame = MatSub(frame, prevFrame);
+            if ((currentFrame % 10) == 0 && !cCoder.inputFrame.empty()) frame = MatSub(frame, prevFrame);
             prevFrame = tempFrame.clone();
 
             // Сожмём данные с zlib-default
@@ -1823,11 +1822,9 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraSt
                 continue;
             }
 
-            t2 = std::chrono::steady_clock::now();             // Изменение размера и объединение
-            if (frame1.channels() == 3)
-                cv::cvtColor(frame1, frame1, cv::COLOR_BGR2GRAY);
-            if (frame2.channels() == 3)
-                cv::cvtColor(frame2, frame2, cv::COLOR_BGR2GRAY);
+            t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
+            if (frame1.channels() == 3) cv::cvtColor(frame1, frame1, cv::COLOR_BGR2GRAY);
+            if (frame2.channels() == 3) cv::cvtColor(frame2, frame2, cv::COLOR_BGR2GRAY);
 
             // Сожмём данные с zlib-fast
             if ((cCoder_1.zstd_compress(frame1) > 0) && (cCoder_2.zstd_compress(frame2)) > 0) {
@@ -1940,17 +1937,15 @@ void zstd_gray_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraStat
             }
 
             t2 = std::chrono::steady_clock::now();  // Изменение размера и объединение
-            if (frame1.channels() == 3)
-                cv::cvtColor(frame1, frame1, cv::COLOR_BGR2GRAY);
-            if (frame2.channels() == 3)
-                cv::cvtColor(frame2, frame2, cv::COLOR_BGR2GRAY);
+            if (frame1.channels() == 3) cv::cvtColor(frame1, frame1, cv::COLOR_BGR2GRAY);
+            if (frame2.channels() == 3) cv::cvtColor(frame2, frame2, cv::COLOR_BGR2GRAY);
 
             tempFrame_1 = frame1.clone();
-            if ((cam1.currentFrame % 30) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
+            if ((cam1.currentFrame % 10) == 0 && !prevFrame_1.empty()) frame1 = MatSub(frame1, prevFrame_1);
             prevFrame_1 = tempFrame_1.clone();
 
             tempFrame_2 = frame2.clone();
-            if ((cam2.currentFrame % 30) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
+            if ((cam2.currentFrame % 10) == 0 && !prevFrame_2.empty()) frame2 = MatSub(frame2, prevFrame_2);
             prevFrame_2 = tempFrame_2.clone();
 
             // Сожмём данные с zlib-fast

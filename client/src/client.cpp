@@ -90,7 +90,7 @@ void lz4_concat_prime(tcp::socket &socket) {
 
             lz4Decoder.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder.lz4_decompress()) {
-                if ((currentFrame % 30) > 0 && !prevFrame.empty())
+                if ((currentFrame % 10) > 0 && !prevFrame.empty())
                     lz4Decoder.outputFrame = MatAdd(lz4Decoder.outputFrame, prevFrame);
                 prevFrame = lz4Decoder.outputFrame.clone();
             }
@@ -222,7 +222,7 @@ void lz4_noconcat_prime(tcp::socket &socket) {
 
             lz4Decoder1.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder1.lz4_decompress()) {
-                if ((currentFrame1 % 30) > 0 && !prevFrame1.empty())
+                if ((currentFrame1 % 10) > 0 && !prevFrame1.empty())
                     lz4Decoder1.outputFrame = MatAdd(lz4Decoder1.outputFrame, prevFrame1);
                 prevFrame1 = lz4Decoder1.outputFrame.clone();
                 cv::imshow("webcam1", lz4Decoder1.outputFrame);
@@ -230,7 +230,7 @@ void lz4_noconcat_prime(tcp::socket &socket) {
 
             lz4Decoder2.outputFrame = cv::Mat(rows, cols, type);
             if (lz4Decoder2.lz4_decompress()) {
-                if ((currentFrame2 % 30) > 0 && !prevFrame2.empty())
+                if ((currentFrame2 % 10) > 0 && !prevFrame2.empty())
                     lz4Decoder2.outputFrame = MatAdd(lz4Decoder2.outputFrame, prevFrame2);
                 prevFrame2 = lz4Decoder2.outputFrame.clone();
                 cv::imshow("webcam2", lz4Decoder2.outputFrame);
@@ -352,7 +352,7 @@ void zlib_concat_prime(tcp::socket &socket) {
             zDecoder.outputFrame = cv::Mat(rows, cols, type);
 
             if (zDecoder.zlib_decompress_stream()) {
-                if ((currentFrame % 30 == 0) && !prevFrame.empty())
+                if ((currentFrame % 10 == 0) && !prevFrame.empty())
                     zDecoder.outputFrame = MatAdd(zDecoder.outputFrame, prevFrame);
                 prevFrame = zDecoder.outputFrame.clone();
 
@@ -489,7 +489,7 @@ void zlib_noconcat_prime(tcp::socket &socket) {
 
             zDecoder_1.outputFrame = cv::Mat(rows, cols, type);
             if (zDecoder_1.zlib_decompress_stream()) {
-                if ((currentFrame_1 % 30 == 0) && !prevFrame1.empty())
+                if ((currentFrame_1 % 10 == 0) && !prevFrame1.empty())
                     zDecoder_1.outputFrame = MatAdd(zDecoder_1.outputFrame, prevFrame1);
                 prevFrame1 = zDecoder_1.outputFrame.clone();
 
@@ -498,7 +498,7 @@ void zlib_noconcat_prime(tcp::socket &socket) {
 
             zDecoder_2.outputFrame = cv::Mat(rows, cols, type);
             if (zDecoder_2.zlib_decompress_stream()) {
-                if ((currentFrame_2 % 30 == 0) && !prevFrame2.empty())
+                if ((currentFrame_2 % 10 == 0) && !prevFrame2.empty())
                     zDecoder_2.outputFrame = MatAdd(zDecoder_2.outputFrame, prevFrame2);
                 prevFrame2 = zDecoder_2.outputFrame.clone();
 
@@ -509,8 +509,8 @@ void zlib_noconcat_prime(tcp::socket &socket) {
 
             std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                       << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
-                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
+                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t2).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                       << " uncompressed data: " << zDecoder_1.decompressedSize + zDecoder_2.decompressedSize
                       << " compressed data: " << zDecoder_1.compressedSize + zDecoder_2.compressedSize << " koef: "
                       << static_cast<double>(zDecoder_1.decompressedSize + zDecoder_2.decompressedSize) /
@@ -619,7 +619,7 @@ void zstd_concat_prime(tcp::socket &socket) {
             cDecoder.outputFrame = cv::Mat(rows, cols, type);
 
             if (cDecoder.zstd_decompress_stream()) {
-                if ((currentFrame % 30 == 0) && !prevFrame.empty())
+                if ((currentFrame % 10 == 0) && !prevFrame.empty())
                     cDecoder.outputFrame = MatAdd(cDecoder.outputFrame, prevFrame);
                 prevFrame = cDecoder.outputFrame.clone();
 
@@ -756,7 +756,7 @@ void zstd_noconcat_prime(tcp::socket &socket) {
 
             cDecoder_1.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_1.zstd_decompress_stream()) {
-                if ((currentFrame_1 % 30 == 0) && !prevFrame1.empty())
+                if ((currentFrame_1 % 10 == 0) && !prevFrame1.empty())
                     cDecoder_1.outputFrame = MatAdd(cDecoder_1.outputFrame, prevFrame1);
                 prevFrame1 = cDecoder_1.outputFrame.clone();
 
@@ -765,7 +765,7 @@ void zstd_noconcat_prime(tcp::socket &socket) {
 
             cDecoder_2.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_2.zstd_decompress_stream()) {
-                if ((currentFrame_2 % 30 == 0) && !prevFrame2.empty())
+                if ((currentFrame_2 % 10 == 0) && !prevFrame2.empty())
                     cDecoder_2.outputFrame = MatAdd(cDecoder_2.outputFrame, prevFrame2);
                 prevFrame2 = cDecoder_2.outputFrame.clone();
 
@@ -776,8 +776,8 @@ void zstd_noconcat_prime(tcp::socket &socket) {
 
             std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                       << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
-                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
+                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t2).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                       << " uncompressed data: " << cDecoder_1.decompressedSize + cDecoder_2.decompressedSize
                       << " compressed data: " << cDecoder_1.compressedSize + cDecoder_2.compressedSize << " koef: "
                       << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
@@ -886,7 +886,7 @@ void zstd_gray_concat_prime(tcp::socket &socket) {
             cDecoder.outputFrame = cv::Mat(rows, cols, type);
 
             if (cDecoder.zstd_decompress_stream()) {
-                if ((currentFrame % 30 == 0) && !prevFrame.empty())
+                if ((currentFrame % 10 == 0) && !prevFrame.empty())
                     cDecoder.outputFrame = MatAdd(cDecoder.outputFrame, prevFrame);
                 prevFrame = cDecoder.outputFrame.clone();
 
@@ -1023,7 +1023,7 @@ void zstd_gray_noconcat_prime(tcp::socket &socket) {
 
             cDecoder_1.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_1.zstd_decompress_stream()) {
-                if ((currentFrame_1 % 30 == 0) && !prevFrame1.empty())
+                if ((currentFrame_1 % 10 == 0) && !prevFrame1.empty())
                     cDecoder_1.outputFrame = MatAdd(cDecoder_1.outputFrame, prevFrame1);
                 prevFrame1 = cDecoder_1.outputFrame.clone();
 
@@ -1032,7 +1032,7 @@ void zstd_gray_noconcat_prime(tcp::socket &socket) {
 
             cDecoder_2.outputFrame = cv::Mat(rows, cols, type);
             if (cDecoder_2.zstd_decompress_stream()) {
-                if ((currentFrame_2 % 30 == 0) && !prevFrame2.empty())
+                if ((currentFrame_2 % 10 == 0) && !prevFrame2.empty())
                     cDecoder_2.outputFrame = MatAdd(cDecoder_2.outputFrame, prevFrame2);
                 prevFrame2 = cDecoder_2.outputFrame.clone();
 
@@ -1043,8 +1043,8 @@ void zstd_gray_noconcat_prime(tcp::socket &socket) {
 
             std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                       << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
-                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
-                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
+                      << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t2).count()
+                      << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count()
                       << " uncompressed data: " << cDecoder_1.decompressedSize + cDecoder_2.decompressedSize
                       << " compressed data: " << cDecoder_1.compressedSize + cDecoder_2.compressedSize << " koef: "
                       << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /

@@ -85,6 +85,20 @@ void captureFrames(CameraState &camState, int camIndex) {
     }
 }
 
+// Вычисление crc32
+void calculate_crc32(const uchar* data, int length) {
+    boost::crc_32_type crc32;
+
+    // Если длина не указана, выдаём ошибку
+    if (length == -1) {
+        std::cerr << "CRC32: zero lenght";
+        return;
+    }   
+
+    crc32.process_bytes(data, length);
+    std::cout << "CRC32: " << std::hex << crc32.checksum() << std::dec << std::endl;;
+}
+
 #pragma endregion
 
 #pragma region lz4
@@ -192,7 +206,8 @@ void lz4_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                           << " acceleration: " << lz4Coder.acceleration << " uncompressed data: " << lz4Coder.uncompressedSize
                           << " compressed data: " << lz4Coder.compressedSize << " koef: "
                           << static_cast<double>(lz4Coder.uncompressedSize) / static_cast<double>(lz4Coder.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame.data, frame.elemSize() * frame.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -322,6 +337,7 @@ void lz4_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2)
                           << " compressed data: " << lz4Coder.compressedSize << " koef: "
                           << static_cast<double>(lz4Coder.uncompressedSize) / static_cast<double>(lz4Coder.compressedSize)
                           << std::endl;
+                calculate_crc32(tempFrame.data, tempFrame.elemSize() * tempFrame.total());
                 currentFrame++;
             }
         }
@@ -446,7 +462,9 @@ void lz4_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &c
                           << " compressed data: " << lz4Coder1.compressedSize + lz4Coder2.compressedSize << " koef: "
                           << static_cast<double>(lz4Coder1.uncompressedSize * 2) /
                                  static_cast<double>(lz4Coder1.compressedSize + lz4Coder2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -581,7 +599,9 @@ void lz4_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam
                           << " compressed data: " << lz4Coder1.compressedSize + lz4Coder2.compressedSize << " koef: "
                           << static_cast<double>(lz4Coder1.uncompressedSize + lz4Coder2.uncompressedSize) /
                                  static_cast<double>(lz4Coder1.compressedSize + lz4Coder2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -696,7 +716,8 @@ void zlib_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t2).count()
                           << " uncompressed data: " << zCoder.originalSize << " compressed data: " << zCoder.compressedSize
                           << " koef: " << static_cast<double>(zCoder.originalSize) / static_cast<double>(zCoder.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame.data, frame.elemSize() * frame.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -813,7 +834,8 @@ void zlib_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t2).count()
                           << " uncompressed data: " << zCoder.originalSize << " compressed data: " << zCoder.compressedSize
                           << " koef: " << static_cast<double>(zCoder.originalSize) / static_cast<double>(zCoder.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(tempFrame.data, tempFrame.elemSize() * tempFrame.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -925,7 +947,9 @@ void zlib_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                           << " compressed data: " << zCoder_1.compressedSize + zCoder_2.compressedSize << " koef: "
                           << static_cast<double>(zCoder_1.originalSize * 2) /
                                  static_cast<double>(zCoder_1.compressedSize + zCoder_2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1048,7 +1072,9 @@ void zlib_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                           << " compressed data: " << zCoder_1.compressedSize + zCoder_2.compressedSize << " koef: "
                           << static_cast<double>(zCoder_1.originalSize + zCoder_2.originalSize) /
                                  static_cast<double>(zCoder_1.compressedSize + zCoder_2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1155,14 +1181,15 @@ void zstd_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                 boost::asio::write(socket, boost::asio::buffer(cCoder.compressedData));
                 t4 = std::chrono::steady_clock::now();  // После передачи
 
-                std::cout << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
+                std::cout << std::dec << " get image frame 1: " << cam1.timeToFrame << " get image frame 2: " << cam2.timeToFrame
                           << " convert image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " compress: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " send: " << std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t2).count()
                           << " uncompressed data: " << cCoder.originalSize << " compressed data: " << cCoder.compressedSize
                           << " koef: " << static_cast<double>(cCoder.originalSize) / static_cast<double>(cCoder.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame.data, frame.elemSize() * frame.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1278,7 +1305,8 @@ void zstd_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState &cam2
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t2).count()
                           << " uncompressed data: " << cCoder.originalSize << " compressed data: " << cCoder.compressedSize
                           << " koef: " << static_cast<double>(cCoder.originalSize) / static_cast<double>(cCoder.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(tempFrame.data, tempFrame.elemSize() * tempFrame.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1390,7 +1418,9 @@ void zstd_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraState &
                           << " compressed data: " << cCoder_1.compressedSize + cCoder_2.compressedSize << " koef: "
                           << static_cast<double>(cCoder_1.originalSize * 2) /
                                  static_cast<double>(cCoder_1.compressedSize + cCoder_2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1513,7 +1543,9 @@ void zstd_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraState &ca
                           << " compressed data: " << cCoder_1.compressedSize + cCoder_2.compressedSize << " koef: "
                           << static_cast<double>(cCoder_1.originalSize + cCoder_2.originalSize) /
                                  static_cast<double>(cCoder_1.compressedSize + cCoder_2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1630,7 +1662,8 @@ void zstd_gray_concat_noprime(tcp::socket &socket, CameraState &cam1, CameraStat
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t2).count()
                           << " uncompressed data: " << cCoder.originalSize << " compressed data: " << cCoder.compressedSize
                           << " koef: " << static_cast<double>(cCoder.originalSize) / static_cast<double>(cCoder.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame.data, frame.elemSize() * frame.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1748,7 +1781,8 @@ void zstd_gray_concat_prime(tcp::socket &socket, CameraState &cam1, CameraState 
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t2).count()
                           << " uncompressed data: " << cCoder.originalSize << " compressed data: " << cCoder.compressedSize
                           << " koef: " << static_cast<double>(cCoder.originalSize) / static_cast<double>(cCoder.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(tempFrame.data, tempFrame.elemSize() * tempFrame.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1862,7 +1896,9 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket, CameraState &cam1, CameraSt
                           << " compressed data: " << cCoder_1.compressedSize + cCoder_2.compressedSize << " koef: "
                           << static_cast<double>(cCoder_1.originalSize * 2) /
                                  static_cast<double>(cCoder_1.compressedSize + cCoder_2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {
@@ -1987,7 +2023,9 @@ void zstd_gray_noconcat_prime(tcp::socket &socket, CameraState &cam1, CameraStat
                           << " compressed data: " << cCoder_1.compressedSize + cCoder_2.compressedSize << " koef: "
                           << static_cast<double>(cCoder_1.originalSize + cCoder_2.originalSize) /
                                  static_cast<double>(cCoder_1.compressedSize + cCoder_2.compressedSize)
-                          << std::endl;
+                          << std::endl; 
+                calculate_crc32(frame1.data, frame1.elemSize() * frame1.total());
+                calculate_crc32(frame2.data, frame2.elemSize() * frame2.total());
             }
         }
     } catch (const std::exception &ex) {

@@ -2,8 +2,11 @@
 
 #include <boost/asio.hpp>
 #include <opencv2/opencv.hpp>
+#include <boost/crc.hpp>
 
 using boost::asio::ip::tcp;
+
+void calculate_crc32(const char* data, int length = -1);
 
 /* ============================================================================================================ */
 

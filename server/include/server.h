@@ -6,6 +6,7 @@
 #include <atomic>
 #include <mutex>
 #include <opencv2/videoio.hpp>
+#include <boost/crc.hpp>
 
 using boost::asio::ip::tcp;
 
@@ -94,6 +95,9 @@ struct CameraState {
 
 // Функция захвата кадров для отдельной камеры
 void captureFrames(CameraState &camState, int camIndex);
+
+// Функция вычисления crc
+void calculate_crc32(const char* data, int length = -1);
 
 #pragma endregion
 

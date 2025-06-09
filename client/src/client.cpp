@@ -1,4 +1,3 @@
-
 #include "client.h"
 #include "decomression.h"
 
@@ -7,6 +6,24 @@
 #include <opencv2/core/mat.hpp>
 #include <chrono>
 #include <opencv2/highgui.hpp>
+
+#pragma region common
+
+// Вычисление crc32
+void calculate_crc32(const uchar* data, int length) {
+    boost::crc_32_type crc32;
+
+    // Если длина не указана, выдаём ошибку
+    if (length == -1) {
+        std::cerr << "CRC32: zero lenght";
+        return;
+    }
+
+    crc32.process_bytes(data, length);
+    std::cout << "CRC32: " << std::hex << crc32.checksum() << std::dec << std::endl;;
+}
+
+#pragma endregion
 
 #pragma region lz4
 
@@ -42,7 +59,7 @@ void lz4_concat_noprime(tcp::socket &socket) {
 
                 t3 = std::chrono::steady_clock::now();  // После отображения
 
-                std::cout << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
+                std::cout << std::dec << " get data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count()
                           << " decompress data: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
                           << " get image: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count()
                           << " FPS: " << 1000 / std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count()
@@ -50,6 +67,7 @@ void lz4_concat_noprime(tcp::socket &socket) {
                           << " compressed data: " << lz4Decoder.compressedSize << " koef: "
                           << static_cast<double>(lz4Decoder.decompressedSize) / static_cast<double>(lz4Decoder.compressedSize)
                           << std::endl;
+                calculate_crc32(lz4Decoder.outputFrame.data, lz4Decoder.outputFrame.elemSize() * lz4Decoder.outputFrame.total());
             }
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
@@ -109,6 +127,8 @@ void lz4_concat_prime(tcp::socket &socket) {
                       << " compressed data: " << lz4Decoder.compressedSize << " koef: "
                       << static_cast<double>(lz4Decoder.decompressedSize) / static_cast<double>(lz4Decoder.compressedSize)
                       << std::endl;
+            calculate_crc32(lz4Decoder.outputFrame.data, lz4Decoder.outputFrame.elemSize() * lz4Decoder.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -171,6 +191,9 @@ void lz4_noconcat_noprime(tcp::socket &socket) {
                       << static_cast<double>(lz4Decoder2.decompressedSize + lz4Decoder1.decompressedSize) /
                              static_cast<double>(lz4Decoder1.compressedSize + lz4Decoder2.compressedSize)
                       << std::endl;
+            calculate_crc32(lz4Decoder1.outputFrame.data, lz4Decoder1.outputFrame.elemSize() * lz4Decoder1.outputFrame.total());
+            calculate_crc32(lz4Decoder2.outputFrame.data, lz4Decoder2.outputFrame.elemSize() * lz4Decoder2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -251,6 +274,9 @@ void lz4_noconcat_prime(tcp::socket &socket) {
                       << static_cast<double>(lz4Decoder1.decompressedSize + lz4Decoder2.decompressedSize) /
                              static_cast<double>(lz4Decoder1.compressedSize + lz4Decoder2.compressedSize)
                       << std::endl;
+            calculate_crc32(lz4Decoder1.outputFrame.data, lz4Decoder1.outputFrame.elemSize() * lz4Decoder1.outputFrame.total());
+            calculate_crc32(lz4Decoder2.outputFrame.data, lz4Decoder2.outputFrame.elemSize() * lz4Decoder2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -311,6 +337,8 @@ void zlib_concat_noprime(tcp::socket &socket) {
                       << " koef: "
                       << static_cast<double>(zDecoder.decompressedSize) / static_cast<double>(zDecoder.compressedSize)
                       << std::endl;
+            calculate_crc32(zDecoder.outputFrame.data, zDecoder.outputFrame.elemSize() * zDecoder.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -372,6 +400,8 @@ void zlib_concat_prime(tcp::socket &socket) {
                       << " koef: "
                       << static_cast<double>(zDecoder.decompressedSize) / static_cast<double>(zDecoder.compressedSize)
                       << std::endl;
+            calculate_crc32(zDecoder.outputFrame.data, zDecoder.outputFrame.elemSize() * zDecoder.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -439,6 +469,9 @@ void zlib_noconcat_noprime(tcp::socket &socket) {
                       << static_cast<double>(zDecoder_1.decompressedSize + zDecoder_2.decompressedSize) /
                              static_cast<double>(zDecoder_1.compressedSize + zDecoder_2.compressedSize)
                       << std::endl;
+            calculate_crc32(zDecoder_1.outputFrame.data, zDecoder_1.outputFrame.elemSize() * zDecoder_1.outputFrame.total());
+            calculate_crc32(zDecoder_2.outputFrame.data, zDecoder_2.outputFrame.elemSize() * zDecoder_2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -518,6 +551,9 @@ void zlib_noconcat_prime(tcp::socket &socket) {
                       << static_cast<double>(zDecoder_1.decompressedSize + zDecoder_2.decompressedSize) /
                              static_cast<double>(zDecoder_1.compressedSize + zDecoder_2.compressedSize)
                       << std::endl;
+            calculate_crc32(zDecoder_1.outputFrame.data, zDecoder_1.outputFrame.elemSize() * zDecoder_1.outputFrame.total());
+            calculate_crc32(zDecoder_2.outputFrame.data, zDecoder_2.outputFrame.elemSize() * zDecoder_2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -578,6 +614,8 @@ void zstd_concat_noprime(tcp::socket &socket) {
                       << " koef: "
                       << static_cast<double>(cDecoder.decompressedSize) / static_cast<double>(cDecoder.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder.outputFrame.data, cDecoder.outputFrame.elemSize() * cDecoder.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -639,6 +677,8 @@ void zstd_concat_prime(tcp::socket &socket) {
                       << " koef: "
                       << static_cast<double>(cDecoder.decompressedSize) / static_cast<double>(cDecoder.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder.outputFrame.data, cDecoder.outputFrame.elemSize() * cDecoder.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -706,6 +746,9 @@ void zstd_noconcat_noprime(tcp::socket &socket) {
                       << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
                              static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder_1.outputFrame.data, cDecoder_1.outputFrame.elemSize() * cDecoder_1.outputFrame.total());
+            calculate_crc32(cDecoder_2.outputFrame.data, cDecoder_2.outputFrame.elemSize() * cDecoder_2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -783,6 +826,9 @@ void zstd_noconcat_prime(tcp::socket &socket) {
                       << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
                              static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder_1.outputFrame.data, cDecoder_1.outputFrame.elemSize() * cDecoder_1.outputFrame.total());
+            calculate_crc32(cDecoder_2.outputFrame.data, cDecoder_2.outputFrame.elemSize() * cDecoder_2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -843,6 +889,8 @@ void zstd_gray_concat_noprime(tcp::socket &socket) {
                       << " koef: "
                       << static_cast<double>(cDecoder.decompressedSize) / static_cast<double>(cDecoder.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder.outputFrame.data, cDecoder.outputFrame.elemSize() * cDecoder.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -904,6 +952,8 @@ void zstd_gray_concat_prime(tcp::socket &socket) {
                       << " koef: "
                       << static_cast<double>(cDecoder.decompressedSize) / static_cast<double>(cDecoder.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder.outputFrame.data, cDecoder.outputFrame.elemSize() * cDecoder.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -971,6 +1021,9 @@ void zstd_gray_noconcat_noprime(tcp::socket &socket) {
                       << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
                              static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder_1.outputFrame.data, cDecoder_1.outputFrame.elemSize() * cDecoder_1.outputFrame.total());
+            calculate_crc32(cDecoder_2.outputFrame.data, cDecoder_2.outputFrame.elemSize() * cDecoder_2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
@@ -1050,6 +1103,9 @@ void zstd_gray_noconcat_prime(tcp::socket &socket) {
                       << static_cast<double>(cDecoder_1.decompressedSize + cDecoder_2.decompressedSize) /
                              static_cast<double>(cDecoder_1.compressedSize + cDecoder_2.compressedSize)
                       << std::endl;
+            calculate_crc32(cDecoder_1.outputFrame.data, cDecoder_1.outputFrame.elemSize() * cDecoder_1.outputFrame.total());
+            calculate_crc32(cDecoder_2.outputFrame.data, cDecoder_2.outputFrame.elemSize() * cDecoder_2.outputFrame.total());
+
             // Обязательно waitKey
             if (cv::waitKey(1) == 27) {  // Нажал ESC
                 cv::destroyAllWindows();
